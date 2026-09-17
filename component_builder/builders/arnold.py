@@ -69,10 +69,8 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
 
     def create_material(
         self, material: model.Material, parent: hou.LopNode
-    ) -> hou.LopNode:
-        material_library = super().create_material(material, parent)
-
-        builder = material_library.createNode('arnold_materialbuilder', material.name)
+    ) -> hou.VopNode:
+        builder = parent.createNode('arnold_materialbuilder', material.name)
         assert isinstance(builder, hou.VopNode), 'invalid node: arnold_materialbuilder'
 
         out = builder.node('OUT_material')
@@ -149,7 +147,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
 
         builder.layoutChildren()
 
-        return material_library
+        return builder
 
     @staticmethod
     def _get_default_color_space(

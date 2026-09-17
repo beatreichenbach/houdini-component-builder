@@ -34,9 +34,14 @@ class ComponentBuilder:
             output_node.setInput(0, geometry_node)
 
         if component.material is not None:
-            material_library_node = self.create_material(component.material, parent)
+
+            material_library_node = parent.createNode('materiallibrary')
+            # Channel Reference the root prim to the material library
+            material_library_node.setParms({'matpathprefix': '/ASSET/mtl/'})
             material_library_node.setPosition(output_position + hou.Vector2(3, 4))
             all_nodes.append(material_library_node)
+
+            self.create_material(component.material, material_library_node)
 
             if component.material_reference:
                 # Replace the Component Material node with a simple reference
@@ -189,14 +194,10 @@ class ComponentBuilder:
 
     def create_material(
         self, material: model.Material, parent: hou.LopNode
-    ) -> hou.LopNode:
-        """Create and return a Material Library node."""
+    ) -> hou.VopNode:
+        """Create and return a Material node."""
 
-        material_library_node = parent.createNode('materiallibrary')
-        # Channel Reference the root prim to the material library
-        material_library_node.setParms({'matpathprefix': '/ASSET/mtl/'})
-
-        return material_library_node
+        raise NotImplementedError()
 
     @staticmethod
     def _set_custom_data(node: hou.LopNode, data: dict[str, Any]) -> None:
