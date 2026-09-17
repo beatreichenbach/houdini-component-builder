@@ -1,5 +1,3 @@
-from component_builder.builders.arnold import ComponentType
-
 # Houdini Component Builder
 
 Library for SideFX Houdini to build Solaris Component Builder networks.
