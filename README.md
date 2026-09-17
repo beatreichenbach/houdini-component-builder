@@ -4,6 +4,8 @@ from component_builder.builders.arnold import ComponentType
 
 Library for SideFX Houdini to build Solaris Component Builder networks.
 
+![Screenshot](.github/assets/screenshot.png)
+
 ## Usage
 
 Build a whole component:
