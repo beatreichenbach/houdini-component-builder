@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+import dataclasses
+from enum import StrEnum
+from typing import Any
+
+import hou
+
+
+@dataclasses.dataclass
+class Geometry:
+    @dataclasses.dataclass
+    class ConvexHullProxy: ...
+
+    @dataclasses.dataclass
+    class BoxProxy: ...
+
+    @dataclasses.dataclass
+    class PolyReduceProxy:
+        percentage: float = 10
+
+    path: str
+    scale: float = 1.0
+    attributes_keep: str = '* ^N ^uv'
+    proxy: ConvexHullProxy | BoxProxy | PolyReduceProxy | None = None
+
+
+@dataclasses.dataclass
+class Material:
+    class ComponentType(StrEnum):
+        BASE = 'base'
+        BASE_COLOR = 'base_color'
+        METALNESS = 'metalness'
+        SPECULAR_COLOR = 'specular_color'
+        SPECULAR_ROUGHNESS = 'specular_roughness'
+        SPECULAR_IOR = 'specular_IOR'
+        TRANSMISSION = 'transmission'
+        TRANSMISSION_COLOR = 'transmission_color'
+        SUBSURFACE = 'subsurface'
+        SUBSURFACE_COLOR = 'subsurface_color'
+        EMISSION = 'emission'
+        EMISSION_COLOR = 'emission_color'
+        OPACITY = 'opacity'
+        NORMAL = 'normal'
+        DISPLACEMENT = 'displacement'
+
+    @dataclasses.dataclass
+    class TextureMap:
+        path: str
+        color_space: str = ''
+
+    name: str
+    values: dict[ComponentType, Any] = dataclasses.field(default_factory=dict)
+    textures: dict[ComponentType, TextureMap] = dataclasses.field(default_factory=dict)
+    triplanar: bool = False
+    triplanar_scale: hou.Vector3 | None = None
+    thin_walled: bool = False
+
+
+@dataclasses.dataclass
+class Component:
+    """
+    A component built from a geometries and materials.
+    Multiple geometries or materials create variants.
+    """
+
+    name: str
+    geometry: Geometry | None = None
+    material: Material | None = None
+    material_reference: bool = True
+    custom_data: dict[str, Any] = dataclasses.field(default_factory=dict)
