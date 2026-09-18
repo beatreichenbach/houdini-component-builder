@@ -21,26 +21,31 @@ class ComponentBuilder:
         """Create and return all created nodes."""
 
         all_nodes = []
+        anchor_position = hou.Vector2(0, 0)
+        tail: hou.LopNode | None = None
 
-        output_node = self.create_output(component, parent)
-        all_nodes.append(output_node)
-
-        output_position = output_node.position()
-
-        geometry_node = None
+        # Geometry
         if component.geometry is not None:
             geometry_node = self.create_geometry(component.geometry, parent)
-            geometry_node.setPosition(output_position + hou.Vector2(0, 4))
+            geometry_node.setPosition(anchor_position)
+            anchor_position = geometry_node.position()
             all_nodes.append(geometry_node)
+            tail = geometry_node
 
-            output_node.setInput(0, geometry_node)
+            inserted_nodes = self.post_geometry(
+                component.geometry, geometry_node, parent
+            )
+            all_nodes.extend(inserted_nodes)
+            if inserted_nodes:
+                anchor_position = inserted_nodes[-1].position()
+                tail = inserted_nodes[-1]
 
+        # Material
         if component.material is not None:
             material_library_node = parent.createNode('materiallibrary')
             material_library_node = cast(hou.LopNode, material_library_node)
-
             material_library_node.setParms({'matpathprefix': f'{ROOT_PRIM}/mtl/'})
-            material_library_node.setPosition(output_position + hou.Vector2(3, 4))
+            material_library_node.setPosition(anchor_position + hou.Vector2(3, 0))
             all_nodes.append(material_library_node)
 
             self.create_material(component.material, material_library_node)
@@ -52,33 +57,43 @@ class ComponentBuilder:
                     {'setsavepath': True, 'savepath': 'mtl.usdc'}
                 )
                 configure_layer_node.setInput(0, material_library_node)
-                configure_layer_node.setPosition(output_position + hou.Vector2(3, 3))
+                configure_layer_node.setPosition(anchor_position + hou.Vector2(3, -1))
 
                 reference_node = parent.createNode('reference')
+                reference_node = cast(hou.LopNode, reference_node)
                 reference_node.setParms({'primpath': ROOT_PRIM})
                 reference_node.setInput(1, configure_layer_node)
-                if geometry_node is not None:
-                    reference_node.setInput(0, geometry_node)
-                reference_node.setPosition(output_position + hou.Vector2(0, 2))
+                reference_node.setPosition(anchor_position + hou.Vector2(0, -2))
+                if tail is not None:
+                    reference_node.setInput(0, tail)
                 all_nodes.extend((configure_layer_node, reference_node))
-
-                output_node.setInput(0, reference_node)
-                output_node.setParms({'mode': 1})
+                anchor_position = reference_node.position()
+                tail = reference_node
             else:
                 component_material_node = parent.createNode('componentmaterial')
+                component_material_node = cast(hou.LopNode, component_material_node)
                 component_material_node.setInput(1, material_library_node)
-                if geometry_node is not None:
-                    component_material_node.setInput(0, geometry_node)
-                component_material_node.setPosition(output_position + hou.Vector2(0, 2))
+                component_material_node.setPosition(
+                    anchor_position + hou.Vector2(0, -2)
+                )
+                if tail is not None:
+                    component_material_node.setInput(0, tail)
                 all_nodes.append(component_material_node)
+                anchor_position = component_material_node.position()
+                tail = component_material_node
 
-                output_node.setInput(0, component_material_node)
-
-        utils.layout_nodes(all_nodes, margin=hou.Vector2(3, 0))
-
+        # Output
+        output_node = self.create_output(component, parent)
+        if component.material_reference:
+            output_node.setParms({'mode': 1})
+        output_node.setInput(0, tail)
+        output_node.setPosition(anchor_position + hou.Vector2(0, -2))
         output_node.setSelected(True, clear_all_selected=True)
+        all_nodes.append(output_node)
 
         logger.info(f'Successfully created {component.name!r}')
+
+        utils.layout_nodes(all_nodes, margin=hou.Vector2(3, 0))
 
         return tuple(all_nodes)
 
@@ -93,6 +108,18 @@ class ComponentBuilder:
         output_node = cast(hou.LopNode, output_node)
         self._set_custom_data(output_node, component.custom_data)
         return output_node
+
+    def pre_output(
+        self,
+        component: model.Component,
+        output_node: hou.LopNode,
+        parent: hou.LopNode | hou.LopNetwork,
+    ) -> tuple[hou.LopNode, ...]:
+        """
+        Create and return nodes that are inserted before the ComponentOutput node.
+        """
+
+        return ()
 
     def create_geometry(
         self, geometry: model.Geometry, parent: hou.LopNode | hou.LopNetwork
@@ -213,6 +240,18 @@ class ComponentBuilder:
         default_node.setInput(0, clean_node)
 
         return component_geometry_node
+
+    def post_geometry(
+        self,
+        geometry: model.Geometry,
+        geometry_node: hou.LopNode,
+        parent: hou.LopNode | hou.LopNetwork,
+    ) -> tuple[hou.LopNode, ...]:
+        """
+        Create and return nodes that are inserted after the ComponentGeometry node.
+        """
+
+        return ()
 
     def create_material(
         self, material: model.Material, parent: hou.LopNode

@@ -1,5 +1,5 @@
 import logging
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 import hou
 
@@ -16,38 +16,19 @@ class ColorSpace(NamedTuple):
 
 
 class ArnoldComponentBuilder(base.ComponentBuilder):
-    def create_component(
-        self, component: model.Component, parent: hou.LopNode
+    def post_geometry(
+        self,
+        geometry: model.Component,
+        geometry_node: hou.LopNode,
+        parent: hou.LopNode | hou.LopNetwork,
     ) -> tuple[hou.LopNode, ...]:
-        all_nodes = super().create_component(component, parent)
+        created_nodes: list[hou.LopNode] = []
 
-        # Get ComponentGeometry node
-        for node in all_nodes:
-            if 'componentgeometry' in node.type().name():
-                geometry_node = node
-                break
-        else:
-            return all_nodes
-
-        # Reposition
-        for node in all_nodes:
-            if node is geometry_node:
-                continue
-            node.move(hou.Vector2(0, -2))
-
-        geometry_position = geometry_node.position()
-        all_nodes = list(all_nodes)
-
-        # Connections
-        connections = {}
-        for connection in geometry_node.outputConnections():
-            connection_output_node = connection.outputNode()
-            index = connection.inputIndex()
-            if connection_output_node is not None:
-                connections[connection_output_node] = index
+        anchor_position = geometry_node.position()
 
         # Mesh Edit
         mesh_edit_node = parent.createNode('mesh')
+        mesh_edit_node = cast(hou.LopNode, mesh_edit_node)
         mesh_edit_node.setParms(
             {
                 'primpattern': '%type:Mesh',
@@ -56,26 +37,17 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                 'doubleSided': True,
             }
         )
-        mesh_edit_node.setPosition(geometry_position + hou.Vector2(0, -1))
+        mesh_edit_node.setPosition(anchor_position + hou.Vector2(0, -1))
         mesh_edit_node.setInput(0, geometry_node)
-        output_node = mesh_edit_node
-        all_nodes.append(mesh_edit_node)
+        created_nodes.append(mesh_edit_node)
 
         # Render Geometry Settings
-        if (
-            component.material
-            and ComponentType.DISPLACEMENT in component.material.textures
-        ):
-            settings_node = create_render_geometry_settings(parent)
-            settings_node.setPosition(geometry_position + hou.Vector2(0, -2))
-            all_nodes.append(settings_node)
-            output_node = settings_node
+        settings_node = create_render_geometry_settings(parent)
+        settings_node.setPosition(anchor_position + hou.Vector2(0, -2))
+        settings_node.setInput(0, mesh_edit_node)
+        created_nodes.append(settings_node)
 
-        # Reconnect
-        for node, index in connections.items():
-            node.setInput(index, output_node)
-
-        return tuple(all_nodes)
+        return tuple(created_nodes)
 
     def create_material(
         self, material: model.Material, parent: hou.LopNode
@@ -253,11 +225,13 @@ def create_triplanar(
 
 
 def create_render_geometry_settings(
-    parent: hou.LopNode, name: str | None = None
+    parent: hou.LopNode | hou.LopNetwork, name: str | None = None
 ) -> hou.LopNode:
     """Create and return a RenderGeometrySettings node."""
 
     node = parent.createNode('rendergeometrysettings', name, force_valid_node_name=True)
+    node = cast(hou.LopNode, node)
+
     # NOTE: Set most parameters to default values to make it easier for the user to
     # start setting custom values.
     values = {
