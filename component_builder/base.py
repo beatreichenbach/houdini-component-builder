@@ -38,11 +38,12 @@ class ComponentBuilder(ABC):
             all_nodes.append(geometry_node)
             tail = geometry_node
 
+            # Post Geometry
             inserted_nodes = self.post_geometry(
-                component.geometry, geometry_node, parent
+                component.geometry, parent, geometry_node
             )
-            all_nodes.extend(inserted_nodes)
             if inserted_nodes:
+                all_nodes.extend(inserted_nodes)
                 anchor_position = inserted_nodes[-1].position()
                 tail = inserted_nodes[-1]
 
@@ -57,7 +58,6 @@ class ComponentBuilder(ABC):
             self.create_material(component.material, material_library_node)
 
             if component.material_reference:
-                # Replace the Component Material node with a simple reference
                 configure_layer_node = parent.createNode('configurelayer')
                 configure_layer_node.setParms(
                     {'setsavepath': True, 'savepath': 'mtl.usdc'}
@@ -87,6 +87,13 @@ class ComponentBuilder(ABC):
                 all_nodes.append(component_material_node)
                 anchor_position = component_material_node.position()
                 tail = component_material_node
+
+        # Pre Output
+        inserted_nodes = self.pre_output(component, parent, tail)
+        if inserted_nodes:
+            all_nodes.extend(inserted_nodes)
+            anchor_position = inserted_nodes[-1].position()
+            tail = inserted_nodes[-1]
 
         # Output
         output_node = self.create_output(component, parent)
@@ -118,8 +125,8 @@ class ComponentBuilder(ABC):
     def pre_output(
         self,
         component: model.Component,
-        output_node: hou.LopNode,
         parent: hou.LopNode | hou.LopNetwork,
+        input_node: hou.LopNode | None = None,
     ) -> tuple[hou.LopNode, ...]:
         """
         Create and return nodes that are inserted before the ComponentOutput node.
@@ -258,8 +265,8 @@ class ComponentBuilder(ABC):
     def post_geometry(
         self,
         geometry: model.Geometry,
-        geometry_node: hou.LopNode,
         parent: hou.LopNode | hou.LopNetwork,
+        geometry_node: hou.LopNode,
     ) -> tuple[hou.LopNode, ...]:
         """
         Create and return nodes that are inserted after the ComponentGeometry node.

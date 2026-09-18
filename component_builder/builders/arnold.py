@@ -18,8 +18,8 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
     def post_geometry(
         self,
         geometry: model.Component,
-        geometry_node: hou.LopNode,
         parent: hou.LopNode | hou.LopNetwork,
+        geometry_node: hou.LopNode,
     ) -> tuple[hou.LopNode, ...]:
         created_nodes: list[hou.LopNode] = []
 
