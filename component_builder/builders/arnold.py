@@ -80,7 +80,9 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
     def create_material(
         self, material: model.Material, parent: hou.LopNode
     ) -> hou.VopNode:
-        builder = parent.createNode('arnold_materialbuilder', material.name)
+        builder = parent.createNode(
+            'arnold_materialbuilder', material.name, force_valid_node_name=True
+        )
         assert isinstance(builder, hou.VopNode), 'invalid node: arnold_materialbuilder'
 
         out = builder.node('OUT_material')
@@ -212,7 +214,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
 
 def create_image(
     parent: hou.VopNode,
-    name: str = '',
+    name: str | None = None,
     filename: str = '',
     color_space: ColorSpace | None = None,
     ignore_missing_textures: bool = True,
@@ -223,7 +225,7 @@ def create_image(
         color_space = ColorSpace('Utility', 'Raw')
 
     filename = filename.replace('\\', '/')
-    node = parent.createNode('arnold::image')
+    node = parent.createNode('arnold::image', name, force_valid_node_name=True)
     node.setParms(
         {
             'filename': filename,
@@ -232,32 +234,32 @@ def create_image(
             'ignore_missing_textures': ignore_missing_textures,
         }
     )
-    if name:
-        node.setName(name)
 
     return node
 
 
 def create_triplanar(
-    parent: hou.VopNode, name: str = '', scale: hou.Vector3 | None = None
+    parent: hou.VopNode, name: str | None = None, scale: hou.Vector3 | None = None
 ) -> hou.VopNode:
     """Create and return a Triplanar node."""
 
-    node = parent.createNode('arnold::triplanar')
+    node = parent.createNode('arnold::triplanar', name, force_valid_node_name=True)
     if scale is not None:
         node.setParms({'scale': scale})
-    if name:
-        node.setName(name)
 
     return node
 
 
-def create_render_geometry_settings(parent: hou.LopNode, name: str = '') -> hou.LopNode:
+def create_render_geometry_settings(
+    parent: hou.LopNode, name: str | None = None
+) -> hou.LopNode:
     """Create and return a RenderGeometrySettings node."""
 
-    node = parent.createNode('rendergeometrysettings')
+    node = parent.createNode('rendergeometrysettings', name, force_valid_node_name=True)
+    # NOTE: Set most parameters to default values to make it easier for the user to
+    # start setting custom values.
     values = {
-        'primpattern': '/ASSET/geo/*',
+        'primpattern': f'{base.ROOT_PRIM}/geo/*',
         hou.text.encode('primvars:arnold:subdiv_type_control'): 'set',
         hou.text.encode('primvars:arnold:subdiv_iterations_control'): 'set',
         hou.text.encode('primvars:arnold:subdiv_adaptive_error_control'): 'set',
@@ -270,6 +272,5 @@ def create_render_geometry_settings(parent: hou.LopNode, name: str = '') -> hou.
         hou.text.encode('primvars:arnold:disp_padding_control'): 'set',
     }
     node.setParms(values)
-    if name:
-        node.setName(name)
+
     return node

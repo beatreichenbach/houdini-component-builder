@@ -8,6 +8,8 @@ from . import model, utils
 
 logger = logging.getLogger(__name__)
 
+ROOT_PRIM = '/ASSET'
+
 
 class ComponentBuilder:
     def __init__(self) -> None:
@@ -38,7 +40,7 @@ class ComponentBuilder:
             material_library_node = cast(hou.LopNode, material_library_node)
 
             # Channel Reference the root prim to the material library
-            material_library_node.setParms({'matpathprefix': '/ASSET/mtl/'})
+            material_library_node.setParms({'matpathprefix': f'{ROOT_PRIM}/mtl/'})
             material_library_node.setPosition(output_position + hou.Vector2(3, 4))
             all_nodes.append(material_library_node)
 
@@ -54,7 +56,7 @@ class ComponentBuilder:
                 configure_layer_node.setPosition(output_position + hou.Vector2(3, 3))
 
                 reference_node = parent.createNode('reference')
-                reference_node.setParms({'primpath': '/ASSET'})
+                reference_node.setParms({'primpath': ROOT_PRIM})
                 reference_node.setInput(1, configure_layer_node)
                 if geometry_node is not None:
                     reference_node.setInput(0, geometry_node)
@@ -86,7 +88,9 @@ class ComponentBuilder:
     ) -> hou.LopNode:
         """Create and return a ComponentOutput node."""
 
-        output_node = parent.createNode('componentoutput', component.name)
+        output_node = parent.createNode(
+            'componentoutput', component.name, force_valid_node_name=True
+        )
         output_node = cast(hou.LopNode, output_node)
         self._set_custom_data(output_node, component.custom_data)
         return output_node

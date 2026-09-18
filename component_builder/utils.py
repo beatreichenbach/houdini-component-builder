@@ -8,6 +8,9 @@ import hou
 def get_current_node() -> hou.Node | None:
     """Return the Node of the active NetworkEditor."""
 
+    if not hou.isUIAvailable():
+        return None
+
     current_pane = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
     if isinstance(current_pane, hou.NetworkEditor):
         return current_pane.pwd()
