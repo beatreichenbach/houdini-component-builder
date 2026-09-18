@@ -239,7 +239,9 @@ def create_image(
 
 
 def create_triplanar(
-    parent: hou.VopNode, name: str | None = None, scale: hou.Vector3 | None = None
+    parent: hou.VopNode,
+    name: str | None = None,
+    scale: tuple[float, float, float] = (1, 1, 1),
 ) -> hou.VopNode:
     """Create and return a Triplanar node."""
 

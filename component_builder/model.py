@@ -1,10 +1,6 @@
-from __future__ import annotations
-
 import dataclasses
 from enum import StrEnum
 from typing import Any
-
-import hou
 
 
 @dataclasses.dataclass
@@ -53,17 +49,12 @@ class Material:
     values: dict[ComponentType, Any] = dataclasses.field(default_factory=dict)
     textures: dict[ComponentType, TextureMap] = dataclasses.field(default_factory=dict)
     triplanar: bool = False
-    triplanar_scale: hou.Vector3 | None = None
+    triplanar_scale: tuple[float, float, float] = (1, 1, 1)
     thin_walled: bool = False
 
 
 @dataclasses.dataclass
 class Component:
-    """
-    A component built from a geometries and materials.
-    Multiple geometries or materials create variants.
-    """
-
     name: str
     geometry: Geometry | None = None
     material: Material | None = None

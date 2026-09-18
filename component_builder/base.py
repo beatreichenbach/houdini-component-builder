@@ -1,5 +1,5 @@
 import logging
-import os.path
+import pathlib
 from typing import Any, cast
 
 import hou
@@ -39,7 +39,6 @@ class ComponentBuilder:
             material_library_node = parent.createNode('materiallibrary')
             material_library_node = cast(hou.LopNode, material_library_node)
 
-            # Channel Reference the root prim to the material library
             material_library_node.setParms({'matpathprefix': f'{ROOT_PRIM}/mtl/'})
             material_library_node.setPosition(output_position + hou.Vector2(3, 4))
             all_nodes.append(material_library_node)
@@ -118,10 +117,9 @@ class ComponentBuilder:
         bottom = default_node.position()
 
         path = geometry.path.replace('\\', '/')
-        filename = os.path.basename(path)
-        name, ext = os.path.splitext(filename)
+        ext = pathlib.PurePosixPath(path).suffix.lower()
 
-        if ext in ('.fbx', '.obj', '.bgeo', '.sc'):
+        if ext in ('.bgeo', '.bgeo.sc', '.bgeo.gz', '.geo', '.obj', '.fbx'):
             file_node = geo_node.createNode('file')
             file_node.setParms({'file': path})
             file_node.setPosition(bottom + hou.Vector2(0, 10))
@@ -140,6 +138,20 @@ class ComponentBuilder:
             convert_node.setPosition(bottom + hou.Vector2(0, 10))
             convert_node.setInput(0, unpack_node)
             output_node = convert_node
+        elif ext in ('.usd', '.usda', '.usdc', '.usdz'):
+            usd_import_node = geo_node.createNode('usdimport')
+            usd_import_node.setParms(
+                {
+                    'filepath1': path,
+                    'input_unpack': True,
+                    'unpack_geomtype': 1,  # Polygons
+                }
+            )
+            import_time_parm = usd_import_node.parm('importtime')
+            if import_time_parm is not None:
+                import_time_parm.deleteAllKeyframes()
+            usd_import_node.setPosition(bottom + hou.Vector2(0, 10))
+            output_node = usd_import_node
         else:
             raise ValueError(f'unsupported file extension: {ext}')
 

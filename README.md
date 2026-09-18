@@ -28,7 +28,7 @@ material = Material(
         Material.ComponentType.DISPLACEMENT: Material.TextureMap('displacement.exr')
     },
     triplanar=True,
-    triplanar_scale=hou.Vector3(2.1, 0.5, 0.7)
+    triplanar_scale=(2.1, 0.5, 0.7)
 )
 
 component = Component(
