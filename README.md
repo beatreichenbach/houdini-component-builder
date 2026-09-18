@@ -10,22 +10,30 @@ Build a whole component:
 
 ```python
 import hou
-from component_builder import Component, Geometry, Material, ArnoldComponentBuilder
+from component_builder import (
+    Component,
+    Geometry,
+    Material,
+    ArnoldComponentBuilder,
+    ComponentType,
+    TextureMap,
+    ConvexHullProxy
+)
 
 geometry = Geometry(
     path='/path/to/geo.abc',
     scale=0.01,
-    proxy=Geometry.ConvexHullProxy()
+    proxy=ConvexHullProxy()
 )
 
 material = Material(
     name='base',
-    values={Material.ComponentType.SPECULAR_IOR: 1.4},
+    values={ComponentType.SPECULAR_IOR: 1.4},
     textures={
-        Material.ComponentType.BASE_COLOR: Material.TextureMap('base_color.jpg'),
-        Material.ComponentType.NORMAL: Material.TextureMap('normal.jpg'),
-        Material.ComponentType.SPECULAR_ROUGHNESS: Material.TextureMap('roughness.jpg'),
-        Material.ComponentType.DISPLACEMENT: Material.TextureMap('displacement.exr')
+        ComponentType.BASE_COLOR: TextureMap('base_color.jpg'),
+        ComponentType.NORMAL: TextureMap('normal.jpg'),
+        ComponentType.SPECULAR_ROUGHNESS: TextureMap('roughness.jpg'),
+        ComponentType.DISPLACEMENT: TextureMap('displacement.exr')
     },
     triplanar=True,
     triplanar_scale=(2.1, 0.5, 0.7)

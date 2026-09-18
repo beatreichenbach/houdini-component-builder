@@ -7,8 +7,6 @@ from .. import base, model
 
 logger = logging.getLogger(__name__)
 
-ComponentType = model.Material.ComponentType
-
 
 class ColorSpace(NamedTuple):
     color_family: str
@@ -67,7 +65,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
         # Values
         if material.thin_walled:
             surface.setParms({'thin_walled': True})
-        values = {c.value: v for c, v in material.values.items()}
+        values = {get_arnold_component(c): v for c, v in material.values.items()}
         surface.setParms(values)
 
         # Textures
@@ -84,7 +82,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                 color_space = self._get_default_color_space(component_type)
 
             # Displacement
-            if component_type == ComponentType.DISPLACEMENT:
+            if component_type == model.ComponentType.DISPLACEMENT:
                 image_node = create_image(
                     parent=builder,
                     name=name,
@@ -101,7 +99,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                     out.setInput(1, image_node)
                 continue
 
-            index = surface.inputIndex(component_type.value)
+            index = surface.inputIndex(get_arnold_component(component_type))
             if index < 0:
                 logger.warning(f'Invalid channel for StandardSurface: {component_type}')
                 continue
@@ -116,7 +114,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
             output_node = image_node
 
             # Normal Map
-            if component_type == ComponentType.NORMAL:
+            if component_type == model.ComponentType.NORMAL:
                 normal_map_node = builder.createNode('arnold::normal_map')
                 normal_map_node.setInput(0, image_node)
                 output_node = normal_map_node
@@ -137,20 +135,20 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
 
     @staticmethod
     def _get_default_color_space(
-        component_type: ComponentType,
+        component_type: model.ComponentType,
     ) -> ColorSpace:
-        """Return the color family and color space for a ComponentType."""
+        """Return the color family and color space for a model.ComponentType."""
 
-        # NOTE: Currently assumes ACES v1.2 ocio config.
+        # NOTE: Assume ACES v1.2 OCIO config.
 
         color_family = 'Utility'
 
         default_colorspace = {
-            ComponentType.BASE_COLOR: 'sRGB - Texture',
-            ComponentType.SPECULAR_COLOR: 'sRGB - Texture',
-            ComponentType.TRANSMISSION_COLOR: 'sRGB - Texture',
-            ComponentType.SUBSURFACE_COLOR: 'sRGB - Texture',
-            ComponentType.EMISSION_COLOR: 'sRGB - Texture',
+            model.ComponentType.BASE_COLOR: 'sRGB - Texture',
+            model.ComponentType.SPECULAR_COLOR: 'sRGB - Texture',
+            model.ComponentType.TRANSMISSION_COLOR: 'sRGB - Texture',
+            model.ComponentType.SUBSURFACE_COLOR: 'sRGB - Texture',
+            model.ComponentType.EMISSION_COLOR: 'sRGB - Texture',
         }
 
         color_space = default_colorspace.get(component_type, 'Raw')
@@ -250,3 +248,12 @@ def create_render_geometry_settings(
     node.setParms(values)
 
     return node
+
+
+def get_arnold_component(component_type: model.ComponentType) -> str:
+    """Return the Arnold component name from a model.ComponentType."""
+
+    names = {c: c.value for c in model.ComponentType}
+    names[model.ComponentType.SPECULAR_IOR] = 'specular_ior'
+    name = names[component_type]
+    return name

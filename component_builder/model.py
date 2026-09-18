@@ -1,50 +1,59 @@
 import dataclasses
+from abc import ABC
 from enum import StrEnum
 from typing import Any
 
 
+# Geometry
+class Proxy(ABC): ...
+
+
+class ConvexHullProxy(Proxy): ...
+
+
+class BoxProxy(Proxy): ...
+
+
+@dataclasses.dataclass
+class PolyReduceProxy(Proxy):
+    percentage: float = 10
+
+
 @dataclasses.dataclass
 class Geometry:
-    @dataclasses.dataclass
-    class ConvexHullProxy: ...
-
-    @dataclasses.dataclass
-    class BoxProxy: ...
-
-    @dataclasses.dataclass
-    class PolyReduceProxy:
-        percentage: float = 10
-
     path: str
     scale: float = 1.0
-    attributes_keep: str = '* ^N ^uv'
-    proxy: ConvexHullProxy | BoxProxy | PolyReduceProxy | None = None
+    delete_attributes: str = '* ^N ^uv'
+    proxy: Proxy | None = None
+
+
+# Material
+class ComponentType(StrEnum):
+    BASE = 'base'
+    BASE_COLOR = 'base_color'
+    METALNESS = 'metalness'
+    SPECULAR_COLOR = 'specular_color'
+    SPECULAR_ROUGHNESS = 'specular_roughness'
+    SPECULAR_IOR = 'specular_ior'
+    TRANSMISSION = 'transmission'
+    TRANSMISSION_COLOR = 'transmission_color'
+    SUBSURFACE = 'subsurface'
+    SUBSURFACE_COLOR = 'subsurface_color'
+    EMISSION = 'emission'
+    EMISSION_COLOR = 'emission_color'
+    OPACITY = 'opacity'
+    NORMAL = 'normal'
+    DISPLACEMENT = 'displacement'
+
+
+@dataclasses.dataclass
+class TextureMap:
+    path: str
+    color_space: str = ''
 
 
 @dataclasses.dataclass
 class Material:
-    class ComponentType(StrEnum):
-        BASE = 'base'
-        BASE_COLOR = 'base_color'
-        METALNESS = 'metalness'
-        SPECULAR_COLOR = 'specular_color'
-        SPECULAR_ROUGHNESS = 'specular_roughness'
-        SPECULAR_IOR = 'specular_IOR'
-        TRANSMISSION = 'transmission'
-        TRANSMISSION_COLOR = 'transmission_color'
-        SUBSURFACE = 'subsurface'
-        SUBSURFACE_COLOR = 'subsurface_color'
-        EMISSION = 'emission'
-        EMISSION_COLOR = 'emission_color'
-        OPACITY = 'opacity'
-        NORMAL = 'normal'
-        DISPLACEMENT = 'displacement'
-
-    @dataclasses.dataclass
-    class TextureMap:
-        path: str
-        color_space: str = ''
-
     name: str
     values: dict[ComponentType, Any] = dataclasses.field(default_factory=dict)
     textures: dict[ComponentType, TextureMap] = dataclasses.field(default_factory=dict)
@@ -53,6 +62,7 @@ class Material:
     thin_walled: bool = False
 
 
+# Output
 @dataclasses.dataclass
 class Component:
     name: str

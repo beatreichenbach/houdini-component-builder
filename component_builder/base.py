@@ -1,5 +1,6 @@
 import logging
 import pathlib
+from abc import ABC, abstractmethod
 from typing import Any, cast
 
 import hou
@@ -11,10 +12,7 @@ logger = logging.getLogger(__name__)
 ROOT_PRIM = '/ASSET'
 
 
-class ComponentBuilder:
-    def __init__(self) -> None:
-        pass
-
+class ComponentBuilder(ABC):
     def create_component(
         self, component: model.Component, parent: hou.LopNode | hou.LopNetwork
     ) -> tuple[hou.LopNode, ...]:
@@ -192,7 +190,7 @@ class ComponentBuilder:
             {
                 'deldegengeo': False,
                 'dodelattribs': True,
-                'delattribs': geometry.attributes_keep,
+                'delattribs': geometry.delete_attributes,
                 'dodelgroups': True,
             }
         )
@@ -209,26 +207,24 @@ class ComponentBuilder:
             proxy_clean_node.setPosition(bottom + hou.Vector2(0, 4))
             proxy_clean_node.setInput(0, clean_node)
 
-            if isinstance(geometry.proxy, model.Geometry.PolyReduceProxy):
-                polyreduce_node = geo_node.createNode('polyreduce')
-                polyreduce_node.setParms({'percentage': geometry.proxy.percentage})
-                polyreduce_node.setPosition(bottom + hou.Vector2(0, 3))
-                polyreduce_node.setInput(0, proxy_clean_node)
-                proxy_output_node = polyreduce_node
-            elif isinstance(geometry.proxy, model.Geometry.BoxProxy):
-                bound_node = geo_node.createNode('bound')
-                bound_node.setPosition(bottom + hou.Vector2(0, 3))
-                bound_node.setInput(0, proxy_clean_node)
-                proxy_output_node = bound_node
-            elif isinstance(geometry.proxy, model.Geometry.ConvexHullProxy):
-                convexhull_node = geo_node.createNode('shrinkwrap')
-                convexhull_node.setPosition(bottom + hou.Vector2(0, 3))
-                convexhull_node.setInput(0, proxy_clean_node)
-                proxy_output_node = convexhull_node
-            else:
-                raise ValueError(
-                    f'unsupported proxy type: {type(geometry.proxy).__name__}'
-                )
+            proxy_output_node: hou.SopNode | None = None
+            match geometry.proxy:
+                case model.PolyReduceProxy():
+                    polyreduce_node = geo_node.createNode('polyreduce')
+                    polyreduce_node.setParms({'percentage': geometry.proxy.percentage})
+                    polyreduce_node.setPosition(bottom + hou.Vector2(0, 3))
+                    polyreduce_node.setInput(0, proxy_clean_node)
+                    proxy_output_node = polyreduce_node
+                case model.BoxProxy():
+                    bound_node = geo_node.createNode('bound')
+                    bound_node.setPosition(bottom + hou.Vector2(0, 3))
+                    bound_node.setInput(0, proxy_clean_node)
+                    proxy_output_node = bound_node
+                case model.ConvexHullProxy():
+                    convexhull_node = geo_node.createNode('shrinkwrap')
+                    convexhull_node.setPosition(bottom + hou.Vector2(0, 3))
+                    convexhull_node.setInput(0, proxy_clean_node)
+                    proxy_output_node = convexhull_node
 
             normal_node = geo_node.createNode('normal')
             normal_node.setParms({'cuspangle': 10})
@@ -253,12 +249,11 @@ class ComponentBuilder:
 
         return ()
 
+    @abstractmethod
     def create_material(
         self, material: model.Material, parent: hou.LopNode
     ) -> hou.VopNode:
         """Create and return a Material node."""
-
-        raise NotImplementedError()
 
     @staticmethod
     def _set_custom_data(node: hou.LopNode, data: dict[str, Any]) -> None:
@@ -298,7 +293,7 @@ class ComponentBuilder:
             raise ValueError(f'node {node.name()!r} is not a ComponentOutput node')
         data_count_parm.set(len(parm_data))
         index = 1
-        for name, (parm_name, data_type, value) in data.items():
+        for name, (parm_name, data_type, value) in parm_data.items():
             name_parm = node.parm(f'customdataname{index}')
             type_parm = node.parm(f'customdatatype{index}')
             value_parm = node.parm(f'{parm_name}{index}')
