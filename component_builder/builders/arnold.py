@@ -1,4 +1,5 @@
 import logging
+from typing import NamedTuple
 
 import hou
 
@@ -7,6 +8,11 @@ from .. import base, model
 logger = logging.getLogger(__name__)
 
 ComponentType = model.Material.ComponentType
+
+
+class ColorSpace(NamedTuple):
+    color_family: str
+    color_space: str
 
 
 class ArnoldComponentBuilder(base.ComponentBuilder):
@@ -97,7 +103,11 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                 continue
 
             name = f'image_{component_type}'
-            color_family, color_space = self._get_default_color_space(component_type)
+
+            if texture.color_space:
+                color_space = self._get_color_space(texture.color_space)
+            else:
+                color_space = self._get_default_color_space(component_type)
 
             # Displacement
             if component_type == ComponentType.DISPLACEMENT:
@@ -105,7 +115,6 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                     parent=builder,
                     name=name,
                     filename=texture.path,
-                    color_family=color_family,
                     color_space=color_space,
                 )
                 if material.triplanar:
@@ -128,7 +137,6 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                 parent=builder,
                 name=name,
                 filename=texture.path,
-                color_family=color_family,
                 color_space=color_space,
             )
             output_node = image_node
@@ -156,7 +164,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
     @staticmethod
     def _get_default_color_space(
         component_type: ComponentType,
-    ) -> tuple[str, str]:
+    ) -> ColorSpace:
         """Return the color family and color space for a ComponentType."""
 
         # NOTE: Currently assumes ACES v1.2 ocio config.
@@ -172,26 +180,55 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
         }
 
         color_space = default_colorspace.get(component_type, 'Raw')
-        return color_family, color_space
+        return ColorSpace(color_family, color_space)
+
+    @staticmethod
+    def _get_color_space(name: str) -> ColorSpace:
+        """
+        Return the color family and color space from a name from the ACES OCIO config.
+        """
+
+        color_spaces: dict[str, ColorSpace] = {
+            'srgb_texture': ColorSpace('Utility', 'sRGB - Texture'),
+            'lin_rec709': ColorSpace('Utility', 'Linear Rec.709 (sRGB)'),
+            'g22_rec709': ColorSpace('Utility', 'Gamma 2.2 Rec.709 - Texture'),
+            'g18_rec709': ColorSpace('Utility', 'Gamma 1.8 Rec.709 - Texture'),
+            'acescg': ColorSpace('ACES', 'ACEScg'),
+            'lin_ap1': ColorSpace('ACES', 'ACEScg'),
+            'lin_srgb': ColorSpace('Utility', 'Linear Rec.709 (sRGB)'),
+        }
+
+        # Unsupported names
+        # g22_ap1
+        # g18_ap1
+        # adobergb
+        # lin_adobergb
+        # srgb_displayp3
+        # lin_displayp3
+
+        color_space = color_spaces.get(name, ColorSpace('Utility', 'Raw'))
+        return color_space
 
 
 def create_image(
     parent: hou.VopNode,
     name: str = '',
     filename: str = '',
-    color_family: str = 'Utility',
-    color_space: str = 'Utility - Raw',
+    color_space: ColorSpace | None = None,
     ignore_missing_textures: bool = True,
 ) -> hou.VopNode:
     """Create and return an image node."""
+
+    if color_space is None:
+        color_space = ColorSpace('Utility', 'Raw')
 
     filename = filename.replace('\\', '/')
     node = parent.createNode('arnold::image')
     node.setParms(
         {
             'filename': filename,
-            'color_family': color_family,
-            'color_space': color_space,
+            'color_family': color_space.color_family,
+            'color_space': color_space.color_space,
             'ignore_missing_textures': ignore_missing_textures,
         }
     )
