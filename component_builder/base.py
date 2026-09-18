@@ -1,5 +1,4 @@
 import logging
-import pathlib
 from abc import ABC, abstractmethod
 from typing import Any, cast
 
@@ -11,6 +10,10 @@ from .exceptions import ComponentBuilderError
 logger = logging.getLogger(__name__)
 
 ROOT_PRIM = '/ASSET'
+
+GEO_FORMATS = ('.bgeo.sc', '.bgeo.gz', '.bgeo', '.geo', '.obj', '.fbx')
+ALEMBIC_FORMATS = ('.abc',)
+USD_FORMATS = ('.usd', '.usda', '.usdc', '.usdz')
 
 
 class ComponentBuilder(ABC):
@@ -155,14 +158,12 @@ class ComponentBuilder(ABC):
         bottom = default_node.position()
 
         path = geometry.path.replace('\\', '/')
-        ext = pathlib.PurePosixPath(path).suffix.lower()
-
-        if ext in ('.bgeo', '.bgeo.sc', '.bgeo.gz', '.geo', '.obj', '.fbx'):
+        if path.endswith(GEO_FORMATS):
             file_node = geo_node.createNode('file')
             file_node.setParms({'file': path})
             file_node.setPosition(bottom + hou.Vector2(0, 10))
             output_node = file_node
-        elif ext == '.abc':
+        elif path.endswith(ALEMBIC_FORMATS):
             alembic_node = geo_node.createNode('alembic')
             alembic_node.setParms({'fileName': path})
             alembic_node.setPosition(bottom + hou.Vector2(0, 12))
@@ -176,7 +177,7 @@ class ComponentBuilder(ABC):
             convert_node.setPosition(bottom + hou.Vector2(0, 10))
             convert_node.setInput(0, unpack_node)
             output_node = convert_node
-        elif ext in ('.usd', '.usda', '.usdc', '.usdz'):
+        elif path.endswith(USD_FORMATS):
             usd_import_node = geo_node.createNode('usdimport')
             usd_import_node.setParms(
                 {
@@ -191,7 +192,7 @@ class ComponentBuilder(ABC):
             usd_import_node.setPosition(bottom + hou.Vector2(0, 10))
             output_node = usd_import_node
         else:
-            raise ComponentBuilderError(f'unsupported file extension: {ext}')
+            raise ComponentBuilderError(f'unsupported file type: {path!r}')
 
         transform_node = geo_node.createNode('xform')
         transform_node.setParms({'scale': geometry.scale})
