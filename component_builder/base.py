@@ -6,6 +6,7 @@ from typing import Any, cast
 import hou
 
 from . import model, utils
+from .exceptions import ComponentBuilderError
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,11 @@ class ComponentBuilder(ABC):
     def create_component(
         self, component: model.Component, parent: hou.LopNode | hou.LopNetwork
     ) -> tuple[hou.LopNode, ...]:
-        """Create and return all created nodes."""
+        """
+        Create and return all created nodes.
+
+        :raises ComponentBuilderError: if the creation failed.
+        """
 
         all_nodes = []
         anchor_position = hou.Vector2(0, 0)
@@ -125,19 +130,27 @@ class ComponentBuilder(ABC):
         """
         Create and return a ComponentGeometry node.
 
-        :raises ValueError: if the file type is not supported.
-        :raises ValueError: if the proxy type is not supported.
+        :raises ComponentBuilderError: if the creation failed.
         """
 
         component_geometry_node = parent.createNode('componentgeometry')
-        assert isinstance(component_geometry_node, hou.LopNode)
+        component_geometry_node = cast(hou.LopNode, component_geometry_node)
 
-        geo_node = component_geometry_node.node('sopnet/geo')
-        assert isinstance(geo_node, hou.SopNode), 'invalid node: sopnet/geo'
-        default_node = geo_node.node('default')
-        assert isinstance(default_node, hou.SopNode), 'invalid node: default'
-        proxy_node = geo_node.node('proxy')
-        assert isinstance(proxy_node, hou.SopNode), 'invalid node: proxy'
+        geo_node_name = 'sopnet/geo'
+        geo_node = component_geometry_node.node(geo_node_name)
+        if geo_node is None:
+            raise ComponentBuilderError(f'missing node: {geo_node_name!r}')
+        geo_node = cast(hou.SopNode, cast(hou.OpNode, geo_node))
+
+        default_node_name = 'default'
+        default_node = geo_node.node(default_node_name)
+        if default_node is None:
+            raise ComponentBuilderError(f'missing node: {default_node_name!r}')
+
+        proxy_node_name = 'proxy'
+        proxy_node = geo_node.node(proxy_node_name)
+        if proxy_node is None:
+            raise ComponentBuilderError(f'missing node: {proxy_node_name!r}')
 
         bottom = default_node.position()
 
@@ -178,7 +191,7 @@ class ComponentBuilder(ABC):
             usd_import_node.setPosition(bottom + hou.Vector2(0, 10))
             output_node = usd_import_node
         else:
-            raise ValueError(f'unsupported file extension: {ext}')
+            raise ComponentBuilderError(f'unsupported file extension: {ext}')
 
         transform_node = geo_node.createNode('xform')
         transform_node.setParms({'scale': geometry.scale})
@@ -225,6 +238,10 @@ class ComponentBuilder(ABC):
                     convexhull_node.setPosition(bottom + hou.Vector2(0, 3))
                     convexhull_node.setInput(0, proxy_clean_node)
                     proxy_output_node = convexhull_node
+                case _:
+                    raise ComponentBuilderError(
+                        f'unsupported proxy type: {type(geometry.proxy).__name__}'
+                    )
 
             normal_node = geo_node.createNode('normal')
             normal_node.setParms({'cuspangle': 10})
@@ -253,15 +270,14 @@ class ComponentBuilder(ABC):
     def create_material(
         self, material: model.Material, parent: hou.LopNode
     ) -> hou.VopNode:
-        """Create and return a Material node."""
+        """Create and return a Material node.
+
+        :raises ComponentBuilderError: if the creation failed.
+        """
 
     @staticmethod
     def _set_custom_data(node: hou.LopNode, data: dict[str, Any]) -> None:
-        """
-        Set custom data on a ComponentOutput node.
-
-        :raises ValueError: if `node` is not a ComponentOutput node.
-        """
+        """Set custom data on a ComponentOutput node."""
 
         # Filter valid data
         parm_data = {}
@@ -290,7 +306,8 @@ class ComponentBuilder(ABC):
         # Populate custom data
         data_count_parm = node.parm('customdatacount')
         if data_count_parm is None:
-            raise ValueError(f'node {node.name()!r} is not a ComponentOutput node')
+            return
+
         data_count_parm.set(len(parm_data))
         index = 1
         for name, (parm_name, data_type, value) in parm_data.items():

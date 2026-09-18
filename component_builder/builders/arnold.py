@@ -4,6 +4,7 @@ from typing import NamedTuple, cast
 import hou
 
 from .. import base, model
+from ..exceptions import ComponentBuilderError
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +54,12 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
         builder = parent.createNode(
             'arnold_materialbuilder', material.name, force_valid_node_name=True
         )
-        assert isinstance(builder, hou.VopNode), 'invalid node: arnold_materialbuilder'
+        builder = cast(hou.VopNode, cast(hou.OpNode, builder))
 
-        out = builder.node('OUT_material')
-        assert out is not None, 'invalid node: OUT_Material'
+        out_name = 'OUT_material'
+        out = builder.node(out_name)
+        if out is None:
+            raise ComponentBuilderError(f'missing child node: {out_name!r}')
 
         # Standard Surface
         surface = builder.createNode('arnold::standard_surface')

@@ -1,5 +1,6 @@
 from .base import ComponentBuilder
 from .builders import ArnoldComponentBuilder
+from .exceptions import ComponentBuilderError
 from .model import (
     BoxProxy,
     Component,
@@ -17,6 +18,7 @@ __all__ = [
     'BoxProxy',
     'Component',
     'ComponentBuilder',
+    'ComponentBuilderError',
     'ComponentType',
     'ConvexHullProxy',
     'Geometry',
