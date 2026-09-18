@@ -15,6 +15,7 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
     ) -> tuple[hou.LopNode, ...]:
         all_nodes = super().create_component(component, parent)
 
+        # Get ComponentGeometry node
         for node in all_nodes:
             if 'componentgeometry' in node.type().name():
                 geometry_node = node
@@ -29,8 +30,15 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
             node.move(hou.Vector2(0, -2))
 
         geometry_position = geometry_node.position()
-
         all_nodes = list(all_nodes)
+
+        # Connections
+        connections = {}
+        for connection in geometry_node.outputConnections():
+            connection_output_node = connection.outputNode()
+            index = connection.inputIndex()
+            if connection_output_node is not None:
+                connections[connection_output_node] = index
 
         # Mesh Edit
         mesh_edit_node = parent.createNode('mesh')
@@ -58,12 +66,8 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
             output_node = settings_node
 
         # Reconnect
-        for connection in geometry_node.outputConnections():
-            connection_output_node = connection.outputNode()
-            index = connection.inputIndex()
-            if connection_output_node is not None:
-                connection_output_node.setInput(index, output_node)
-        output_node.setInput(0, mesh_edit_node)
+        for node, index in connections.items():
+            node.setInput(index, output_node)
 
         return tuple(all_nodes)
 
