@@ -1,6 +1,6 @@
 import logging
 import os.path
-from typing import Any
+from typing import Any, cast
 
 import hou
 
@@ -14,7 +14,7 @@ class ComponentBuilder:
         pass
 
     def create_component(
-        self, component: model.Component, parent: hou.LopNode
+        self, component: model.Component, parent: hou.LopNode | hou.LopNetwork
     ) -> tuple[hou.LopNode, ...]:
         """Create and return all created nodes."""
 
@@ -36,6 +36,8 @@ class ComponentBuilder:
         if component.material is not None:
 
             material_library_node = parent.createNode('materiallibrary')
+            material_library_node = cast(hou.LopNode, material_library_node)
+
             # Channel Reference the root prim to the material library
             material_library_node.setParms({'matpathprefix': '/ASSET/mtl/'})
             material_library_node.setPosition(output_position + hou.Vector2(3, 4))
@@ -81,16 +83,17 @@ class ComponentBuilder:
         return tuple(all_nodes)
 
     def create_output(
-        self, component: model.Component, parent: hou.LopNode
+        self, component: model.Component, parent: hou.LopNode | hou.LopNetwork
     ) -> hou.LopNode:
         """Create and return a ComponentOutput node."""
 
         output_node = parent.createNode('componentoutput', component.name)
+        output_node = cast(hou.LopNode, output_node)
         self._set_custom_data(output_node, component.custom_data)
         return output_node
 
     def create_geometry(
-        self, geometry: model.Geometry, parent: hou.LopNode
+        self, geometry: model.Geometry, parent: hou.LopNode | hou.LopNetwork
     ) -> hou.LopNode:
         """
         Create and return a ComponentGeometry node.
@@ -99,6 +102,7 @@ class ComponentBuilder:
         """
 
         component_geometry_node = parent.createNode('componentgeometry')
+        assert isinstance(component_geometry_node, hou.LopNode)
 
         geo_node = component_geometry_node.node('sopnet/geo')
         assert isinstance(geo_node, hou.SopNode), 'invalid node: sopnet/geo'
