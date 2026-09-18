@@ -213,40 +213,45 @@ class ComponentBuilder:
         :raises ValueError: if `node` is not a ComponentOutput node.
         """
 
-        data_count_parm = node.parm('customdatacount')
-        if data_count_parm is None:
-            raise ValueError(f'node {node.name()} is not a ComponentOutput node')
-
-        data_count_parm.set(len(data))
-
-        index = 1
+        # Filter valid data
+        parm_data = {}
         for name, value in data.items():
-            name_parm = node.parm(f'customdataname{index}')
-            type_parm = node.parm(f'customdatatype{index}')
-            if name_parm is None or type_parm is None:
-                continue
-
             if isinstance(value, (tuple, list)):
-                value_parm = node.parm(f'customdatastrvalue{index}')
-                type_parm.set('stringarray')
+                parm_name = 'customdatastrvalue'
+                data_type = 'stringarray'
                 value = ' '.join([str(v) for v in value])
             elif isinstance(value, str):
-                value_parm = node.parm(f'customdatastrvalue{index}')
-                type_parm.set('string')
+                parm_name = 'customdatastrvalue'
+                data_type = 'string'
             elif isinstance(value, bool):
-                value_parm = node.parm(f'customdataboolvalue{index}')
-                type_parm.set('bool')
+                parm_name = 'customdataboolvalue'
+                data_type = 'bool'
             elif isinstance(value, int):
-                value_parm = node.parm(f'customdataintvalue{index}')
-                type_parm.set('int')
+                parm_name = 'customdataintvalue'
+                data_type = 'int'
             elif isinstance(value, float):
-                value_parm = node.parm(f'customdatafloatvalue{index}')
-                type_parm.set('float')
+                parm_name = 'customdatafloatvalue'
+                data_type = 'float'
             else:
                 logger.warning(f'Invalid custom data type: {name}: {value}')
                 continue
+            parm_data[name] = (parm_name, data_type, value)
 
-            if value_parm is not None:
-                value_parm.set(value)
+        # Populate custom data
+        data_count_parm = node.parm('customdatacount')
+        if data_count_parm is None:
+            raise ValueError(f'node {node.name()!r} is not a ComponentOutput node')
+        data_count_parm.set(len(parm_data))
+        index = 1
+        for name, (parm_name, data_type, value) in data.items():
+            name_parm = node.parm(f'customdataname{index}')
+            type_parm = node.parm(f'customdatatype{index}')
+            value_parm = node.parm(f'{parm_name}{index}')
 
+            if name_parm is None or type_parm is None or value_parm is None:
+                continue
+
+            name_parm.set(name)
+            type_parm.set(data_type)
+            value_parm.set(value)
             index += 1
