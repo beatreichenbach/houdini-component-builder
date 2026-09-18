@@ -34,7 +34,6 @@ class ComponentBuilder:
             output_node.setInput(0, geometry_node)
 
         if component.material is not None:
-
             material_library_node = parent.createNode('materiallibrary')
             material_library_node = cast(hou.LopNode, material_library_node)
 
@@ -99,6 +98,7 @@ class ComponentBuilder:
         Create and return a ComponentGeometry node.
 
         :raises ValueError: if the file type is not supported.
+        :raises ValueError: if the proxy type is not supported.
         """
 
         component_geometry_node = parent.createNode('componentgeometry')
@@ -183,7 +183,9 @@ class ComponentBuilder:
                 convexhull_node.setInput(0, proxy_clean_node)
                 proxy_output_node = convexhull_node
             else:
-                proxy_output_node = None
+                raise ValueError(
+                    f'unsupported proxy type: {type(geometry.proxy).__name__}'
+                )
 
             normal_node = geo_node.createNode('normal')
             normal_node.setParms({'cuspangle': 10})
