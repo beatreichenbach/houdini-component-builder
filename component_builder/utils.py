@@ -3,7 +3,7 @@ from collections.abc import Sequence
 import hou
 
 
-def get_current_node() -> hou.Node | None:
+def get_current_node() -> hou.OpNode | None:
     """Return the Node of the active NetworkEditor."""
 
     if not hou.isUIAvailable():
@@ -11,7 +11,9 @@ def get_current_node() -> hou.Node | None:
 
     current_pane = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
     if isinstance(current_pane, hou.NetworkEditor):
-        return current_pane.pwd()
+        node = current_pane.pwd()
+        if isinstance(node, hou.OpNode):
+            return node
     return None
 
 

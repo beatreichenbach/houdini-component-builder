@@ -126,7 +126,7 @@ class ComponentBuilder(ABC):
         self,
         component: model.Component,
         parent: hou.LopNode | hou.LopNetwork,
-        input_node: hou.LopNode | None = None,
+        head: hou.LopNode | None = None,
     ) -> tuple[hou.LopNode, ...]:
         """
         Create and return nodes that are inserted before the ComponentOutput node.

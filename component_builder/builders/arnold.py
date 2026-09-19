@@ -92,14 +92,14 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                     filename=texture.path,
                     color_space=color_space,
                 )
+                tail = image_node
                 if material.triplanar:
                     triplanar_node = create_triplanar(
                         parent=builder, scale=material.triplanar_scale
                     )
                     triplanar_node.setInput(0, image_node)
-                    out.setInput(1, triplanar_node)
-                else:
-                    out.setInput(1, image_node)
+                    tail = triplanar_node
+                out.setInput(1, tail)
                 continue
 
             component_name = get_arnold_component(component_type)
@@ -115,23 +115,23 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                 filename=texture.path,
                 color_space=color_space,
             )
-            output_node = image_node
-
-            # Normal Map
-            if component_type == model.ComponentType.NORMAL:
-                normal_map_node = builder.createNode('arnold::normal_map')
-                normal_map_node.setInput(0, image_node)
-                output_node = normal_map_node
+            tail = image_node
 
             # Triplanar
             if material.triplanar:
                 triplanar_node = create_triplanar(
                     parent=builder, scale=material.triplanar_scale
                 )
-                triplanar_node.setInput(0, output_node)
-                output_node = triplanar_node
+                triplanar_node.setInput(0, tail)
+                tail = triplanar_node
 
-            surface.setInput(index, output_node)
+            # Normal Map
+            if component_type == model.ComponentType.NORMAL:
+                normal_map_node = builder.createNode('arnold::normal_map')
+                normal_map_node.setInput(0, tail)
+                tail = normal_map_node
+
+            surface.setInput(index, tail)
 
         builder.layoutChildren()
 
@@ -213,14 +213,12 @@ def create_image(
 
 
 def create_triplanar(
-    parent: hou.VopNode,
-    name: str | None = None,
-    scale: tuple[float, float, float] = (1, 1, 1),
+    parent: hou.VopNode, name: str | None = None, scale: float = 1
 ) -> hou.VopNode:
     """Create and return a Triplanar node."""
 
     node = parent.createNode('arnold::triplanar', name, force_valid_node_name=True)
-    node.setParms({'scale': scale})
+    node.setParms({'scale': (scale, scale, scale)})
 
     return node
 
@@ -254,7 +252,7 @@ def create_render_geometry_settings(
 
 
 def get_arnold_component(component_type: model.ComponentType) -> str:
-    """Return the Arnold component name from a model.ComponentType."""
+    """Return the Arnold component name from a ComponentType."""
 
     names = {c: c.value for c in model.ComponentType}
     names[model.ComponentType.SPECULAR_IOR] = 'specular_IOR'

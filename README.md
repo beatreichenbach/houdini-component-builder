@@ -52,7 +52,7 @@ material = Material(
         ComponentType.DISPLACEMENT: TextureMap('displacement.exr'),
     },
     triplanar=True,
-    triplanar_scale=(2.1, 0.5, 0.7),
+    triplanar_scale=2,
 )
 
 component = Component(

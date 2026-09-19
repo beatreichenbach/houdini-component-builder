@@ -57,7 +57,7 @@ class Material:
     values: dict[ComponentType, Any] = dataclasses.field(default_factory=dict)
     textures: dict[ComponentType, TextureMap] = dataclasses.field(default_factory=dict)
     triplanar: bool = False
-    triplanar_scale: tuple[float, float, float] = (1, 1, 1)
+    triplanar_scale: float = 1
     thin_walled: bool = False
 
 
