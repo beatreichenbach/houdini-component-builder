@@ -4,6 +4,26 @@ Library for SideFX Houdini to build Solaris Component Builder networks.
 
 ![Screenshot](.github/assets/screenshot.png)
 
+## Installation
+
+Use as a dependency in `pyproject.toml`:
+
+```toml
+[project]
+dependencies = [
+    "houdini-component-builder@git+https://github.com/beatreichenbach/houdini-component-builder",
+]
+```
+
+## Supported Renderers
+
+- [x] Arnold
+- [ ] Karma / MaterialX
+- [ ] Redshift
+- [ ] V-Ray
+- [ ] RenderMan
+- [ ] USD Preview
+
 ## Usage
 
 Build a whole component:
@@ -17,14 +37,10 @@ from component_builder import (
     ArnoldComponentBuilder,
     ComponentType,
     TextureMap,
-    ConvexHullProxy
+    ConvexHullProxy,
 )
 
-geometry = Geometry(
-    path='/path/to/geo.abc',
-    scale=0.01,
-    proxy=ConvexHullProxy()
-)
+geometry = Geometry(path='/path/to/geo.abc', scale=0.01, proxy=ConvexHullProxy())
 
 material = Material(
     name='base',
@@ -33,10 +49,10 @@ material = Material(
         ComponentType.BASE_COLOR: TextureMap('base_color.jpg'),
         ComponentType.NORMAL: TextureMap('normal.jpg'),
         ComponentType.SPECULAR_ROUGHNESS: TextureMap('roughness.jpg'),
-        ComponentType.DISPLACEMENT: TextureMap('displacement.exr')
+        ComponentType.DISPLACEMENT: TextureMap('displacement.exr'),
     },
     triplanar=True,
-    triplanar_scale=(2.1, 0.5, 0.7)
+    triplanar_scale=(2.1, 0.5, 0.7),
 )
 
 component = Component(
