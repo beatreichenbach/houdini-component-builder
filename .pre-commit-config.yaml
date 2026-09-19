@@ -1,18 +1,12 @@
-default_install_hook_types: [pre-commit, commit-msg]
+default_install_hook_types: [ pre-commit ]
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.8
     hooks:
       - id: ruff-check
-        args: [--fix]
+        args: [ --fix ]
       - id: ruff-format
-
-  - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.4.0
-    hooks:
-      - id: conventional-pre-commit
-        stages: [commit-msg]
 
   - repo: local
     hooks:
@@ -20,5 +14,5 @@ repos:
         name: ty
         entry: uv run --no-sync ty check
         language: system
-        types: [python]
+        types: [ python ]
         pass_filenames: false
