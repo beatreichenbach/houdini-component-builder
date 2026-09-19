@@ -4,29 +4,44 @@ from typing import TypeVar
 
 import hou
 
+from .exceptions import ComponentBuilderError
+
 T = TypeVar('T', bound=hou.OpNode)
 
 
 def create_node(
     node_type: str, parent: hou.OpNode, cls: type[T], name: str | None = None
 ) -> T:
-    """Return a newly created node."""
+    """
+    Return a newly created node.
+
+    :raises ComponentBuilderError: if the node does not match the type.
+    """
 
     node = parent.createNode(node_type, name, force_valid_node_name=True)
     if not isinstance(node, cls):
-        raise ValueError(f'expected type {cls.__name__!r}, got {type(node).__name__!r}')
+        raise ComponentBuilderError(
+            f'expected type {cls.__name__!r}, got {type(node).__name__!r}'
+        )
 
     return node
 
 
 def get_node(path: str, parent: hou.OpNode, cls: type[T]) -> T:
-    """Return the child node."""
+    """
+    Return the child node.
+
+    :raises ComponentBuilderError: if the node cannot be found.
+    :raises ComponentBuilderError: if the node does not match the type.
+    """
 
     node = parent.node(path)
     if node is None:
-        raise ValueError(f'missing child node: {path!r}')
+        raise ComponentBuilderError(f'missing child node: {path!r}')
     if not isinstance(node, cls):
-        raise ValueError(f'expected type {cls.__name__!r}, got {type(node).__name__!r}')
+        raise ComponentBuilderError(
+            f'expected type {cls.__name__!r}, got {type(node).__name__!r}'
+        )
     return node
 
 
