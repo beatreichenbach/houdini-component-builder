@@ -1,7 +1,7 @@
 import logging
 
 import hou
-import voptoolutils
+import voptoolutils  # type: ignore
 
 from .. import base, model, utils
 from ..exceptions import ComponentBuilderError

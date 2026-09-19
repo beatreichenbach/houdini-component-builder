@@ -65,6 +65,14 @@ builder = ArnoldComponentBuilder()
 builder.create_component(component, hou.node('/stage'))
 ```
 
+## Development
+
+```sh
+uv venv --python 3.11
+uv pip install -e ".[dev]"
+pre-commit install
+```
+
 ## License
 
 Copyright (c) 2026 Beat Reichenbach. This project is licensed under the [GPLv3 License](LICENSE).
