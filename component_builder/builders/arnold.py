@@ -5,6 +5,7 @@ import hou
 
 from .. import base, model
 from ..exceptions import ComponentBuilderError
+from ..utils import create_node
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +52,9 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
     def create_material(
         self, material: model.Material, parent: hou.LopNode
     ) -> hou.VopNode:
-        builder = parent.createNode(
-            'arnold_materialbuilder', material.name, force_valid_node_name=True
+        builder = create_node(
+            'arnold_materialbuilder', parent, hou.VopNode, material.name
         )
-        builder = cast(hou.VopNode, cast(hou.OpNode, builder))
 
         out_name = 'OUT_material'
         out = builder.node(out_name)
@@ -199,7 +199,7 @@ def create_image(
         color_space = ColorSpace('Utility', 'Raw')
 
     filename = filename.replace('\\', '/')
-    node = parent.createNode('arnold::image', name, force_valid_node_name=True)
+    node = create_node('arnold::image', parent, hou.VopNode, name)
     node.setParms(
         {
             'filename': filename,
@@ -217,7 +217,7 @@ def create_triplanar(
 ) -> hou.VopNode:
     """Create and return a Triplanar node."""
 
-    node = parent.createNode('arnold::triplanar', name, force_valid_node_name=True)
+    node = create_node('arnold::triplanar', parent, hou.VopNode, name)
     node.setParms({'scale': (scale, scale, scale)})
 
     return node
@@ -228,8 +228,7 @@ def create_render_geometry_settings(
 ) -> hou.LopNode:
     """Create and return a RenderGeometrySettings node."""
 
-    node = parent.createNode('rendergeometrysettings', name, force_valid_node_name=True)
-    node = cast(hou.LopNode, node)
+    node = create_node('rendergeometrysettings', parent, hou.LopNode, name)
 
     # NOTE: Set most parameters to default values to make it easier for the user to
     # start setting custom values.

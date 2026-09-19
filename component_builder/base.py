@@ -4,8 +4,9 @@ from typing import Any, cast
 
 import hou
 
-from . import model, utils
+from . import model
 from .exceptions import ComponentBuilderError
+from .utils import create_node, get_node, layout_nodes
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +50,7 @@ class ComponentBuilder(ABC):
 
         # Material
         if component.material is not None:
-            material_library_node = parent.createNode('materiallibrary')
-            material_library_node = cast(hou.LopNode, material_library_node)
+            material_library_node = create_node('materiallibrary', parent, hou.LopNode)
             material_library_node.setParms({'matpathprefix': f'{ROOT_PRIM}/mtl/'})
             material_library_node.setPosition(anchor_position + hou.Vector2(3, 0))
             all_nodes.append(material_library_node)
@@ -58,15 +58,16 @@ class ComponentBuilder(ABC):
             self.create_material(component.material, material_library_node)
 
             if component.material_reference:
-                configure_layer_node = parent.createNode('configurelayer')
+                configure_layer_node = create_node(
+                    'configurelayer', parent, hou.LopNode
+                )
                 configure_layer_node.setParms(
                     {'setsavepath': True, 'savepath': 'mtl.usdc'}
                 )
                 configure_layer_node.setInput(0, material_library_node)
                 configure_layer_node.setPosition(anchor_position + hou.Vector2(3, -1))
 
-                reference_node = parent.createNode('reference')
-                reference_node = cast(hou.LopNode, reference_node)
+                reference_node = create_node('reference', parent, hou.LopNode)
                 reference_node.setParms({'primpath': ROOT_PRIM})
                 reference_node.setInput(1, configure_layer_node)
                 reference_node.setPosition(anchor_position + hou.Vector2(0, -2))
@@ -76,8 +77,9 @@ class ComponentBuilder(ABC):
                 anchor_position = reference_node.position()
                 tail = reference_node
             else:
-                component_material_node = parent.createNode('componentmaterial')
-                component_material_node = cast(hou.LopNode, component_material_node)
+                component_material_node = create_node(
+                    'componentmaterial', parent, hou.LopNode
+                )
                 component_material_node.setInput(1, material_library_node)
                 component_material_node.setPosition(
                     anchor_position + hou.Vector2(0, -2)
@@ -106,7 +108,7 @@ class ComponentBuilder(ABC):
 
         logger.info(f'Successfully created {component.name!r}')
 
-        utils.layout_nodes(all_nodes, margin=hou.Vector2(3, 0))
+        layout_nodes(all_nodes, margin=hou.Vector2(3, 0))
 
         return tuple(all_nodes)
 
@@ -143,24 +145,10 @@ class ComponentBuilder(ABC):
         :raises ComponentBuilderError: if the creation failed.
         """
 
-        component_geometry_node = parent.createNode('componentgeometry')
-        component_geometry_node = cast(hou.LopNode, component_geometry_node)
-
-        geo_node_name = 'sopnet/geo'
-        geo_node = component_geometry_node.node(geo_node_name)
-        if geo_node is None:
-            raise ComponentBuilderError(f'missing node: {geo_node_name!r}')
-        geo_node = cast(hou.SopNode, cast(hou.OpNode, geo_node))
-
-        default_node_name = 'default'
-        default_node = geo_node.node(default_node_name)
-        if default_node is None:
-            raise ComponentBuilderError(f'missing node: {default_node_name!r}')
-
-        proxy_node_name = 'proxy'
-        proxy_node = geo_node.node(proxy_node_name)
-        if proxy_node is None:
-            raise ComponentBuilderError(f'missing node: {proxy_node_name!r}')
+        component_geometry_node = create_node('componentgeometry', parent, hou.LopNode)
+        geo_node = get_node('soptnet/geo', component_geometry_node, hou.SopNode)
+        default_node = get_node('default', geo_node, hou.SopNode)
+        proxy_node = get_node('proxy', geo_node, hou.SopNode)
 
         bottom = default_node.position()
 

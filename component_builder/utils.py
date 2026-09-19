@@ -1,6 +1,33 @@
+import os
 from collections.abc import Sequence
+from typing import TypeVar
 
 import hou
+
+T = TypeVar('T', bound=hou.OpNode)
+
+
+def create_node(
+    node_type: str, parent: hou.OpNode, cls: type[T], name: str | None = None
+) -> T:
+    """Return a newly created node."""
+
+    node = parent.createNode(node_type, name, force_valid_node_name=True)
+    if not isinstance(node, cls):
+        raise ValueError(f'expected type {cls.__name__!r}, got {type(node).__name__!r}')
+
+    return node
+
+
+def get_node(path: str, parent: hou.OpNode, cls: type[T]) -> T:
+    """Return the child node."""
+
+    node = parent.node(path)
+    if node is None:
+        raise ValueError(f'missing child node: {path!r}')
+    if not isinstance(node, cls):
+        raise ValueError(f'expected type {cls.__name__!r}, got {type(node).__name__!r}')
+    return node
 
 
 def get_current_node() -> hou.OpNode | None:
@@ -20,7 +47,7 @@ def get_current_node() -> hou.OpNode | None:
 def get_bounding_box(nodes: Sequence[hou.NetworkMovableItem]) -> hou.BoundingRect:
     """Return the BoundingRect for Nodes."""
 
-    bbox = hou.BoundingRect()  # type: ignore[call-arg]
+    bbox = hou.BoundingRect()  # type: ignore
     for node in nodes:
         bbox.enlargeToContain(node.position())
         bbox.enlargeToContain(node.position() + node.size())
@@ -52,3 +79,15 @@ def layout_nodes(nodes: Sequence[hou.Node], margin: hou.Vector2 | None = None) -
         offset = target_position - source_position
         for node in nodes:
             node.move(offset)
+
+
+def sanitize_path(path: str) -> str:
+    """Return a sanitized path for Houdini nodes."""
+
+    sanitized = path.replace('\\', '/')
+    file_path = hou.hipFile.path()
+    if file_path:
+        project_dir = os.path.dirname(file_path).replace('\\', '/')
+        sanitized = sanitized.replace(project_dir, '$HIP')
+
+    return sanitized
