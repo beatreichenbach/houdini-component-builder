@@ -1,11 +1,10 @@
 import dataclasses
-from abc import ABC
 from enum import StrEnum
 from typing import Any
 
 
 # Geometry
-class Proxy(ABC): ...
+class Proxy: ...
 
 
 class ConvexHullProxy(Proxy): ...

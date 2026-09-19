@@ -169,7 +169,7 @@ class ComponentBuilder(ABC):
             file_node = geo_node.createNode('file')
             file_node.setParms({'file': path})
             file_node.setPosition(bottom + hou.Vector2(0, 10))
-            output_node = file_node
+            tail = file_node
         elif path.endswith(ALEMBIC_FORMATS):
             alembic_node = geo_node.createNode('alembic')
             alembic_node.setParms({'fileName': path})
@@ -183,7 +183,7 @@ class ComponentBuilder(ABC):
             convert_node = geo_node.createNode('convert')
             convert_node.setPosition(bottom + hou.Vector2(0, 10))
             convert_node.setInput(0, unpack_node)
-            output_node = convert_node
+            tail = convert_node
         elif path.endswith(USD_FORMATS):
             usd_import_node = geo_node.createNode('usdimport')
             usd_import_node.setParms(
@@ -197,14 +197,14 @@ class ComponentBuilder(ABC):
             if import_time_parm is not None:
                 import_time_parm.deleteAllKeyframes()
             usd_import_node.setPosition(bottom + hou.Vector2(0, 10))
-            output_node = usd_import_node
+            tail = usd_import_node
         else:
             raise ComponentBuilderError(f'unsupported file type: {path!r}')
 
         transform_node = geo_node.createNode('xform')
         transform_node.setParms({'scale': geometry.scale})
         transform_node.setPosition(bottom + hou.Vector2(0, 8))
-        transform_node.setInput(0, output_node)
+        transform_node.setInput(0, tail)
 
         clean_node = geo_node.createNode('clean')
         clean_node.setParms(
@@ -228,24 +228,24 @@ class ComponentBuilder(ABC):
             proxy_clean_node.setPosition(bottom + hou.Vector2(0, 4))
             proxy_clean_node.setInput(0, clean_node)
 
-            proxy_output_node: hou.SopNode | None = None
+            proxy_tail = proxy_clean_node
             match geometry.proxy:
                 case model.PolyReduceProxy():
                     polyreduce_node = geo_node.createNode('polyreduce')
                     polyreduce_node.setParms({'percentage': geometry.proxy.percentage})
                     polyreduce_node.setPosition(bottom + hou.Vector2(0, 3))
                     polyreduce_node.setInput(0, proxy_clean_node)
-                    proxy_output_node = polyreduce_node
+                    proxy_tail = polyreduce_node
                 case model.BoxProxy():
                     bound_node = geo_node.createNode('bound')
                     bound_node.setPosition(bottom + hou.Vector2(0, 3))
                     bound_node.setInput(0, proxy_clean_node)
-                    proxy_output_node = bound_node
+                    proxy_tail = bound_node
                 case model.ConvexHullProxy():
                     convexhull_node = geo_node.createNode('shrinkwrap')
                     convexhull_node.setPosition(bottom + hou.Vector2(0, 3))
                     convexhull_node.setInput(0, proxy_clean_node)
-                    proxy_output_node = convexhull_node
+                    proxy_tail = convexhull_node
                 case _:
                     raise ComponentBuilderError(
                         f'unsupported proxy type: {type(geometry.proxy).__name__}'
@@ -254,7 +254,7 @@ class ComponentBuilder(ABC):
             normal_node = geo_node.createNode('normal')
             normal_node.setParms({'cuspangle': 10})
             normal_node.setPosition(bottom + hou.Vector2(0, 2))
-            normal_node.setInput(0, proxy_output_node)
+            normal_node.setInput(0, proxy_tail)
 
             proxy_node.setInput(0, normal_node)
 
