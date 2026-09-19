@@ -1,7 +1,7 @@
 import logging
 
 import hou
-import voptoolutils  # type: ignore
+import voptoolutils  # type: ignore[ty:unresolved-import]
 
 from .. import base, model, utils
 from ..exceptions import ComponentBuilderError
