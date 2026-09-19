@@ -1,5 +1,5 @@
 from .base import ComponentBuilder
-from .builders import ArnoldComponentBuilder
+from .builders import ArnoldComponentBuilder, KarmaComponentBuilder
 from .exceptions import ComponentBuilderError
 from .model import (
     BoxProxy,
@@ -22,6 +22,7 @@ __all__ = [
     'ComponentType',
     'ConvexHullProxy',
     'Geometry',
+    'KarmaComponentBuilder',
     'Material',
     'PolyReduceProxy',
     'Proxy',

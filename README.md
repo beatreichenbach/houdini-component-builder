@@ -18,7 +18,7 @@ dependencies = [
 ## Supported Renderers
 
 - [x] Arnold
-- [ ] Karma / MaterialX
+- [x] Karma
 - [ ] Redshift
 - [ ] V-Ray
 - [ ] RenderMan
