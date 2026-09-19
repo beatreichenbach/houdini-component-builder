@@ -18,7 +18,7 @@ def get_current_node() -> hou.Node | None:
 def get_bounding_box(nodes: Sequence[hou.NetworkMovableItem]) -> hou.BoundingRect:
     """Return the BoundingRect for Nodes."""
 
-    bbox = hou.BoundingRect()
+    bbox = hou.BoundingRect()  # type: ignore[call-arg]
     for node in nodes:
         bbox.enlargeToContain(node.position())
         bbox.enlargeToContain(node.position() + node.size())
