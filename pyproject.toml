@@ -1,6 +1,6 @@
 [project]
 name = "houdini-component-builder"
-version = "0.1.0"
+version = "0.2.0"
 description = "Build Solaris Component Builder networks in SideFX Houdini"
 requires-python = ">=3.11"
 readme = "README.md"
