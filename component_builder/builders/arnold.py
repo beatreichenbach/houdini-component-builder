@@ -17,7 +17,7 @@ class ColorSpace(NamedTuple):
 class ArnoldComponentBuilder(base.ComponentBuilder):
     def post_geometry(
         self,
-        geometry: model.Component,
+        geometry: model.Geometry,
         parent: hou.LopNode | hou.LopNetwork,
         geometry_node: hou.LopNode,
     ) -> tuple[hou.LopNode, ...]:
@@ -102,7 +102,8 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
                     out.setInput(1, image_node)
                 continue
 
-            index = surface.inputIndex(get_arnold_component(component_type))
+            component_name = get_arnold_component(component_type)
+            index = surface.inputIndex(component_name)
             if index < 0:
                 logger.warning(f'Invalid channel for StandardSurface: {component_type}')
                 continue
@@ -219,8 +220,7 @@ def create_triplanar(
     """Create and return a Triplanar node."""
 
     node = parent.createNode('arnold::triplanar', name, force_valid_node_name=True)
-    if scale is not None:
-        node.setParms({'scale': scale})
+    node.setParms({'scale': scale})
 
     return node
 
@@ -257,6 +257,6 @@ def get_arnold_component(component_type: model.ComponentType) -> str:
     """Return the Arnold component name from a model.ComponentType."""
 
     names = {c: c.value for c in model.ComponentType}
-    names[model.ComponentType.SPECULAR_IOR] = 'specular_ior'
+    names[model.ComponentType.SPECULAR_IOR] = 'specular_IOR'
     name = names[component_type]
     return name
