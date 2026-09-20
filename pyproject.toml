@@ -2,9 +2,12 @@
 name = "houdini-component-builder"
 version = "0.2.0"
 description = "Build Solaris Component Builder networks in SideFX Houdini"
-requires-python = ">=3.11"
 readme = "README.md"
 license = "GPL-3.0-or-later"
+authors = [
+    { name = "Beat Reichenbach", email = "beatreichenbach@users.noreply.github.com" },
+]
+requires-python = ">=3.11"
 
 [project.urls]
 Repository = "https://github.com/beatreichenbach/houdini-component-builder"
