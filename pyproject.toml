@@ -5,7 +5,7 @@ description = "Build Solaris Component Builder networks in SideFX Houdini"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 authors = [
-    { name = "Beat Reichenbach", email = "beatreichenbach@users.noreply.github.com" },
+    { name = "Beat Reichenbach" },
 ]
 requires-python = ">=3.11"
 
