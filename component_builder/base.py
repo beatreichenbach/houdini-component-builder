@@ -146,7 +146,7 @@ class ComponentBuilder(ABC):
         """
 
         component_geometry_node = create_node('componentgeometry', parent, hou.LopNode)
-        geo_node = get_node('soptnet/geo', component_geometry_node, hou.SopNode)
+        geo_node = get_node('sopnet/geo', component_geometry_node, hou.SopNode)
         default_node = get_node('default', geo_node, hou.SopNode)
         proxy_node = get_node('proxy', geo_node, hou.SopNode)
 
