@@ -235,15 +235,19 @@ def create_render_geometry_settings(
     values = {
         'primpattern': f'{base.ROOT_PRIM}/geo/*',
         hou.text.encode('primvars:arnold:subdiv_type_control'): 'set',
+        hou.text.encode('primvars:arnold:subdiv_type'): 'catclark',
         hou.text.encode('primvars:arnold:subdiv_iterations_control'): 'set',
+        hou.text.encode('primvars:arnold:subdiv_iterations'): 4,
         hou.text.encode('primvars:arnold:subdiv_adaptive_error_control'): 'set',
         hou.text.encode('primvars:arnold:subdiv_adaptive_error'): 0.1,
         hou.text.encode('primvars:arnold:subdiv_adaptive_space_control'): 'set',
         hou.text.encode('primvars:arnold:subdiv_adaptive_space'): 'object',
         hou.text.encode('primvars:arnold:disp_height_control'): 'set',
+        hou.text.encode('primvars:arnold:disp_height'): 0.01,
         hou.text.encode('primvars:arnold:disp_zero_value_control'): 'set',
         hou.text.encode('primvars:arnold:disp_zero_value'): 0.5,
         hou.text.encode('primvars:arnold:disp_padding_control'): 'set',
+        hou.text.encode('primvars:arnold:disp_padding'): 0.1,
     }
     node.setParms(values)
 
