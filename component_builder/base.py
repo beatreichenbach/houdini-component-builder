@@ -51,13 +51,16 @@ class ComponentBuilder(ABC):
         # Material
         if component.material is not None:
             material_library_node = create_node('materiallibrary', parent, hou.LopNode)
-            material_library_node.setParms({'matpathprefix': f'{ROOT_PRIM}/mtl/'})
+            material_library_node.setParms(
+                {'matpathprefix': f'{ROOT_PRIM}/mtl/', 'genpreviewshaders': False}
+            )
             material_library_node.setPosition(anchor_position + hou.Vector2(3, 0))
             all_nodes.append(material_library_node)
 
             self.create_material(component.material, material_library_node)
 
             if component.material_reference:
+                # Configure Layer
                 configure_layer_node = create_node(
                     'configurelayer', parent, hou.LopNode
                 )
@@ -67,15 +70,28 @@ class ComponentBuilder(ABC):
                 configure_layer_node.setInput(0, material_library_node)
                 configure_layer_node.setPosition(anchor_position + hou.Vector2(3, -1))
 
+                # Reference
                 reference_node = create_node('reference', parent, hou.LopNode)
                 reference_node.setParms({'primpath': ROOT_PRIM})
                 reference_node.setInput(1, configure_layer_node)
                 reference_node.setPosition(anchor_position + hou.Vector2(0, -2))
                 if tail is not None:
                     reference_node.setInput(0, tail)
-                all_nodes.extend((configure_layer_node, reference_node))
-                anchor_position = reference_node.position()
-                tail = reference_node
+
+                # Assign Material
+                assign_node = create_node('assignmaterial', parent, hou.LopNode)
+                assign_node.setParms(
+                    {
+                        'primpattern1': f'{ROOT_PRIM}/geo',
+                        'matspecpath1': f'{ROOT_PRIM}/mtl/{component.material.name}',
+                    }
+                )
+                assign_node.setInput(0, reference_node)
+                assign_node.setPosition(anchor_position + hou.Vector2(0, -3))
+                all_nodes.extend((configure_layer_node, reference_node, assign_node))
+                anchor_position = assign_node.position()
+                tail = assign_node
+
             else:
                 component_material_node = create_node(
                     'componentmaterial', parent, hou.LopNode
