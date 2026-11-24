@@ -65,13 +65,23 @@ builder = ArnoldComponentBuilder()
 builder.create_component(component, hou.node('/stage'))
 ```
 
+## Color spaces
+
+Texture color spaces are optional.
+By default, color textures use `srgb_texture`, while data textures use `raw`.
+Set `use_default_color_space=False` on `Material` to leave color spaces unset instead.
+An explicit `TextureMap.color_space` always takes precedence.
+The Houdini/Karma color-space identifiers are available through `ColorSpaceName`:
+
+```python
+from component_builder import TextureMap, ColorSpaceName
+
+TextureMap('base_color.exr', ColorSpaceName.ACESCG)
+```
+
 ## Development
 
-```sh
-uv venv --python 3.11
-uv pip install -e ".[dev]"
-pre-commit install
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and check commands.
 
 ## License
 
