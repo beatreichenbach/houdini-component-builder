@@ -1,6 +1,6 @@
 [project]
 name = "houdini-component-builder"
-version = "0.3.0"
+version = "0.3.1"
 description = "Build Solaris Component Builder networks in SideFX Houdini"
 readme = "README.md"
 license = "GPL-3.0-or-later"

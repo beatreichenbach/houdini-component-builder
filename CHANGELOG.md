@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.3.1 (2026-11-23)
+
+### Bug Fixes
+
+- **builder**: Store assign material patterns as backtick strings
+  ([`1b29c00`](https://github.com/beatreichenbach/houdini-component-builder/commit/1b29c00eecd479c631d4a5ceb18eeffa91fec56b))
+
+
 ## v0.3.0 (2026-11-23)
 
 ### Bug Fixes
