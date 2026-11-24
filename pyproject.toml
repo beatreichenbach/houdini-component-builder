@@ -19,6 +19,7 @@ dev = [
     "ruff>=0.16",
     "ty>=0.0.82",
     "types-houdini>=21.0",
+    "types-opencolorio>=2.4",
     "types-usd>=24.0",
 ]
 
