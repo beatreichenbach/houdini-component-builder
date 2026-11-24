@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v0.3.0 (2026-11-23)
+
+### Bug Fixes
+
+- Add assign material node
+  ([`c0b6572`](https://github.com/beatreichenbach/houdini-component-builder/commit/c0b6572b516927e2732dcb74a34b90c6600ae3ec))
+
+- Add displacement defaults
+  ([`f92032c`](https://github.com/beatreichenbach/houdini-component-builder/commit/f92032c29040f300e439271fb31be7d5c378b3bc))
+
+- Typo
+  ([`b22ea8e`](https://github.com/beatreichenbach/houdini-component-builder/commit/b22ea8e3a3e6ab8def46b2d2fbd10e4f5fa82b87))
+
+### Build System
+
+- Add author
+  ([`e7a1c46`](https://github.com/beatreichenbach/houdini-component-builder/commit/e7a1c460e9c0176adeb4275454df7c24eaa878cc))
+
+- Exclude uv.lock
+  ([`aa94212`](https://github.com/beatreichenbach/houdini-component-builder/commit/aa942122d42b3a4c922460627be0f2f133b59b72))
+
+- Remove email
+  ([`0590015`](https://github.com/beatreichenbach/houdini-component-builder/commit/059001563e7453d441da636be36a24dae6a37fba))
+
+### Features
+
+- **builder**: Rework component assembly and layer references
+  ([`138e1ec`](https://github.com/beatreichenbach/houdini-component-builder/commit/138e1ecf043564b07d5765863de3f55e25af9765))
+
+
 ## v0.2.0 (2026-09-19)
 
 ### Bug Fixes
