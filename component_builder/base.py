@@ -96,10 +96,10 @@ class ComponentBuilder(ABC):
 
             if component.material is not None:
                 assign_node = create_node('assignmaterial', parent, hou.LopNode)
-                assign_node.setParmExpressions(
+                assign_node.setParms(
                     {
-                        'primpattern1': "lopinputprims(opinputpath('.', 0), 1)",
-                        'matspecpath1': "lopinputprims(opinputpath('.', 0), 2)",
+                        'primpattern1': "`lopinputprims(opinputpath('.', 0), 1)`",
+                        'matspecpath1': "`lopinputprims(opinputpath('.', 0), 2)`",
                     }
                 )
                 assign_node.setInput(0, reference_node)
