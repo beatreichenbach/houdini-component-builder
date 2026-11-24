@@ -45,6 +45,17 @@ def get_node(path: str, parent: hou.OpNode, cls: type[T]) -> T:
     return node
 
 
+def clear_network_items(node: hou.OpNode | hou.NetworkBox) -> None:
+    """Destroy all network boxes and sticky notes inside a network."""
+
+    for network_box in node.networkBoxes():
+        clear_network_items(network_box)
+        network_box.destroy()
+
+    for sticky_note in node.stickyNotes():
+        sticky_note.destroy()
+
+
 def get_current_node() -> hou.OpNode | None:
     """Return the Node of the active NetworkEditor."""
 
@@ -62,7 +73,7 @@ def get_current_node() -> hou.OpNode | None:
 def get_bounding_box(nodes: Sequence[hou.NetworkMovableItem]) -> hou.BoundingRect:
     """Return the BoundingRect for Nodes."""
 
-    bbox = hou.BoundingRect()  # type: ignore[ty:missing-argument]
+    bbox = hou.BoundingRect()
     for node in nodes:
         bbox.enlargeToContain(node.position())
         bbox.enlargeToContain(node.position() + node.size())

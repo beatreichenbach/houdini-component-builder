@@ -1,7 +1,7 @@
 import logging
 
 import hou
-import voptoolutils  # type: ignore[ty:unresolved-import]
+import voptoolutils
 
 from .. import base, model, utils
 from ..exceptions import ComponentBuilderError
@@ -180,7 +180,7 @@ def create_karma_material_builder(
     mask = voptoolutils.KARMAMTLX_TAB_MASK
 
     builder = parent.createNode('subnet', name, force_valid_node_name=True)
-    material_node = voptoolutils._setupMtlXBuilderSubnet(
+    material_node = voptoolutils._setupMtlXBuilderSubnet(  # type: ignore[ty:missing-attribute]
         subnet_node=builder,
         destination_node='karmamaterial',
         name='karmamaterial',

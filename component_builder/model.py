@@ -67,5 +67,5 @@ class Component:
     name: str
     geometry: Geometry | None = None
     material: Material | None = None
-    material_reference: bool = True
+    use_component_material: bool = False
     custom_data: dict[str, Any] = dataclasses.field(default_factory=dict)

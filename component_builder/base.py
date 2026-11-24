@@ -6,7 +6,7 @@ import hou
 
 from . import model
 from .exceptions import ComponentBuilderError
-from .utils import create_node, get_node, layout_nodes
+from .utils import clear_network_items, create_node, get_node, layout_nodes
 
 logger = logging.getLogger(__name__)
 
@@ -27,100 +27,106 @@ class ComponentBuilder(ABC):
         :raises ComponentBuilderError: if the creation failed.
         """
 
-        all_nodes = []
-        anchor_position = hou.Vector2(0, 0)
-        tail: hou.LopNode | None = None
+        if component.geometry is None and component.material is None:
+            return ()
 
-        # Geometry
+        geo_nodes: list[hou.LopNode] = []
+        material_nodes: list[hou.LopNode] = []
+        output_nodes: list[hou.LopNode] = []
+        geo_tail: hou.LopNode | None = None
+        material_tail: hou.LopNode | None = None
+
+        # Geometry Stream
         if component.geometry is not None:
             geometry_node = self.create_geometry(component.geometry, parent)
-            geometry_node.setPosition(anchor_position)
-            anchor_position = geometry_node.position()
-            all_nodes.append(geometry_node)
-            tail = geometry_node
+            geo_nodes.append(geometry_node)
+            geo_tail = geometry_node
 
-            # Post Geometry
             inserted_nodes = self.post_geometry(
                 component.geometry, parent, geometry_node
             )
+            geo_nodes.extend(inserted_nodes)
             if inserted_nodes:
-                all_nodes.extend(inserted_nodes)
-                anchor_position = inserted_nodes[-1].position()
-                tail = inserted_nodes[-1]
+                geo_tail = inserted_nodes[-1]
 
-        # Material
+            if not component.use_component_material:
+                geometry_layer_node = create_node('configurelayer', parent, hou.LopNode)
+                geometry_layer_node.setParms(
+                    {'setsavepath': True, 'savepath': 'geo.usdc'}
+                )
+                geometry_layer_node.setInput(0, geo_tail)
+                geo_nodes.append(geometry_layer_node)
+                geo_tail = geometry_layer_node
+
+        # Material Stream
         if component.material is not None:
             material_library_node = create_node('materiallibrary', parent, hou.LopNode)
             material_library_node.setParms(
                 {'matpathprefix': f'{ROOT_PRIM}/mtl/', 'genpreviewshaders': False}
             )
-            material_library_node.setPosition(anchor_position + hou.Vector2(3, 0))
-            all_nodes.append(material_library_node)
+            material_nodes.append(material_library_node)
 
             self.create_material(component.material, material_library_node)
+            material_tail = material_library_node
 
-            if component.material_reference:
-                # Configure Layer
-                configure_layer_node = create_node(
-                    'configurelayer', parent, hou.LopNode
-                )
-                configure_layer_node.setParms(
+            if not component.use_component_material:
+                material_layer_node = create_node('configurelayer', parent, hou.LopNode)
+                material_layer_node.setParms(
                     {'setsavepath': True, 'savepath': 'mtl.usdc'}
                 )
-                configure_layer_node.setInput(0, material_library_node)
-                configure_layer_node.setPosition(anchor_position + hou.Vector2(3, -1))
+                material_layer_node.setInput(0, material_tail)
+                material_nodes.append(material_layer_node)
+                material_tail = material_layer_node
 
-                # Reference
-                reference_node = create_node('reference', parent, hou.LopNode)
-                reference_node.setParms({'primpath': ROOT_PRIM})
-                reference_node.setInput(1, configure_layer_node)
-                reference_node.setPosition(anchor_position + hou.Vector2(0, -2))
-                if tail is not None:
-                    reference_node.setInput(0, tail)
+        # Composition
+        if component.use_component_material:
+            component_material_node = create_node(
+                'componentmaterial', parent, hou.LopNode
+            )
+            component_material_node.setInput(0, geo_tail)
+            component_material_node.setInput(1, material_tail)
+            output_nodes.append(component_material_node)
+        else:
+            reference_node = create_node('reference', parent, hou.LopNode)
+            reference_node.setParms({'primpath': ROOT_PRIM})
+            if geo_tail is not None:
+                reference_node.setInput(1, geo_tail)
+            reference_node.setInput(2, material_tail)
+            output_nodes.append(reference_node)
 
-                # Assign Material
+            if component.material is not None:
                 assign_node = create_node('assignmaterial', parent, hou.LopNode)
-                assign_node.setParms(
+                assign_node.setParmExpressions(
                     {
-                        'primpattern1': f'{ROOT_PRIM}/geo',
-                        'matspecpath1': f'{ROOT_PRIM}/mtl/{component.material.name}',
+                        'primpattern1': "lopinputprims(opinputpath('.', 0), 1)",
+                        'matspecpath1': "lopinputprims(opinputpath('.', 0), 2)",
                     }
                 )
                 assign_node.setInput(0, reference_node)
-                assign_node.setPosition(anchor_position + hou.Vector2(0, -3))
-                all_nodes.extend((configure_layer_node, reference_node, assign_node))
-                anchor_position = assign_node.position()
-                tail = assign_node
-
-            else:
-                component_material_node = create_node(
-                    'componentmaterial', parent, hou.LopNode
-                )
-                component_material_node.setInput(1, material_library_node)
-                component_material_node.setPosition(
-                    anchor_position + hou.Vector2(0, -2)
-                )
-                if tail is not None:
-                    component_material_node.setInput(0, tail)
-                all_nodes.append(component_material_node)
-                anchor_position = component_material_node.position()
-                tail = component_material_node
-
-        # Pre Output
-        inserted_nodes = self.pre_output(component, parent, tail)
-        if inserted_nodes:
-            all_nodes.extend(inserted_nodes)
-            anchor_position = inserted_nodes[-1].position()
-            tail = inserted_nodes[-1]
+                output_nodes.append(assign_node)
 
         # Output
+        inserted_nodes = self.pre_output(component, parent, output_nodes[-1])
+        output_nodes.extend(inserted_nodes)
+
         output_node = self.create_output(component, parent)
-        if component.material_reference:
+        if not component.use_component_material:
             output_node.setParms({'mode': 1})
-        output_node.setInput(0, tail)
-        output_node.setPosition(anchor_position + hou.Vector2(0, -2))
+        output_node.setInput(0, output_nodes[-1])
         output_node.setSelected(True, clear_all_selected=True)
-        all_nodes.append(output_node)
+        output_nodes.append(output_node)
+
+        # Layout
+        for index, node in enumerate(output_nodes):
+            node.setPosition(hou.Vector2(0, -index))
+
+        for index, node in enumerate(geo_nodes):
+            node.setPosition(hou.Vector2(0, len(geo_nodes) - index))
+
+        for index, node in enumerate(material_nodes):
+            node.setPosition(hou.Vector2(3, len(material_nodes) - index))
+
+        all_nodes = geo_nodes + material_nodes + output_nodes
 
         logger.info(f'Successfully created {component.name!r}')
 
@@ -163,6 +169,9 @@ class ComponentBuilder(ABC):
 
         component_geometry_node = create_node('componentgeometry', parent, hou.LopNode)
         geo_node = get_node('sopnet/geo', component_geometry_node, hou.SopNode)
+
+        clear_network_items(geo_node)
+
         default_node = get_node('default', geo_node, hou.SopNode)
         proxy_node = get_node('proxy', geo_node, hou.SopNode)
 
