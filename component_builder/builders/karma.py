@@ -4,6 +4,7 @@ import hou
 import voptoolutils
 
 from .. import base, model, utils
+from ..color_space import get_default_color_space_name
 from ..exceptions import ComponentBuilderError
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,10 @@ class KarmaComponentBuilder(base.ComponentBuilder):
 
             name = f'image_{component_type}'
 
+            color_space = texture.color_space
+            if not color_space and material.use_default_color_space:
+                color_space = get_default_color_space_name(component_type)
+
             # Displacement
             if component_type == model.ComponentType.DISPLACEMENT:
                 if material.triplanar:
@@ -73,7 +78,7 @@ class KarmaComponentBuilder(base.ComponentBuilder):
                         parent=builder,
                         name=name,
                         filename=texture.path,
-                        color_space=texture.color_space,
+                        color_space=color_space,
                     )
                     tail = image_node
 
@@ -99,7 +104,7 @@ class KarmaComponentBuilder(base.ComponentBuilder):
                     parent=builder,
                     name=name,
                     filename=texture.path,
-                    color_space=texture.color_space,
+                    color_space=color_space,
                 )
                 tail = image_node
 
@@ -128,7 +133,11 @@ def create_image(
 
     filename = filename.replace('\\', '/')
     node = utils.create_node('mtlximage', parent, hou.VopNode, name)
-    node.setParms({'file': filename, 'filecolorspace': color_space})
+    parms: dict[str, str] = {'file': filename}
+    if color_space:
+        parms['filecolorspace'] = color_space
+
+    node.setParms(parms)
 
     return node
 

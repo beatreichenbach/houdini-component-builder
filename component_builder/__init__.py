@@ -1,5 +1,6 @@
 from .base import ComponentBuilder
 from .builders import ArnoldComponentBuilder, KarmaComponentBuilder
+from .color_space import ColorSpaceName
 from .exceptions import ComponentBuilderError
 from .model import (
     BoxProxy,
@@ -16,6 +17,7 @@ from .model import (
 __all__ = [
     'ArnoldComponentBuilder',
     'BoxProxy',
+    'ColorSpaceName',
     'Component',
     'ComponentBuilder',
     'ComponentBuilderError',

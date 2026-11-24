@@ -59,6 +59,7 @@ class Material:
     triplanar: bool = False
     triplanar_scale: float = 1
     thin_walled: bool = False
+    use_default_color_space: bool = True
 
 
 # Output

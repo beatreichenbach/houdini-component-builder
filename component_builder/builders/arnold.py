@@ -1,18 +1,18 @@
 import logging
-from typing import NamedTuple, cast
+from typing import cast
 
 import hou
 
 from .. import base, model
+from ..color_space import (
+    ColorSpace,
+    get_color_space,
+    get_default_color_space_name,
+)
 from ..exceptions import ComponentBuilderError
 from ..utils import create_node
 
 logger = logging.getLogger(__name__)
-
-
-class ColorSpace(NamedTuple):
-    color_family: str
-    color_space: str
 
 
 class ArnoldComponentBuilder(base.ComponentBuilder):
@@ -79,10 +79,13 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
 
             name = f'image_{component_type}'
 
-            if texture.color_space:
-                color_space = self._get_color_space(texture.color_space)
-            else:
-                color_space = self._get_default_color_space(component_type)
+            color_space_name = texture.color_space
+            if not color_space_name and material.use_default_color_space:
+                color_space_name = get_default_color_space_name(component_type)
+
+            color_space = get_color_space(color_space_name)
+            if color_space_name and color_space is None:
+                logger.warning(f'Unknown OCIO color space {color_space_name!r}.')
 
             # Displacement
             if component_type == model.ComponentType.DISPLACEMENT:
@@ -137,55 +140,6 @@ class ArnoldComponentBuilder(base.ComponentBuilder):
 
         return builder
 
-    @staticmethod
-    def _get_default_color_space(
-        component_type: model.ComponentType,
-    ) -> ColorSpace:
-        """Return the color family and color space for a model.ComponentType."""
-
-        # NOTE: Assume ACES v1.2 OCIO config.
-
-        color_family = 'Utility'
-
-        default_colorspace = {
-            model.ComponentType.BASE_COLOR: 'sRGB - Texture',
-            model.ComponentType.SPECULAR_COLOR: 'sRGB - Texture',
-            model.ComponentType.TRANSMISSION_COLOR: 'sRGB - Texture',
-            model.ComponentType.SUBSURFACE_COLOR: 'sRGB - Texture',
-            model.ComponentType.EMISSION_COLOR: 'sRGB - Texture',
-        }
-
-        color_space = default_colorspace.get(component_type, 'Raw')
-        return ColorSpace(color_family, color_space)
-
-    @staticmethod
-    def _get_color_space(name: str) -> ColorSpace:
-        """
-        Return the color family and color space from a name from the ACES OCIO config.
-        """
-
-        color_spaces: dict[str, ColorSpace] = {
-            'srgb_texture': ColorSpace('Utility', 'sRGB - Texture'),
-            'lin_rec709': ColorSpace('Utility', 'Linear Rec.709 (sRGB)'),
-            'g22_rec709': ColorSpace('Utility', 'Gamma 2.2 Rec.709 - Texture'),
-            'g18_rec709': ColorSpace('Utility', 'Gamma 1.8 Rec.709 - Texture'),
-            'acescg': ColorSpace('ACES', 'ACEScg'),
-            'lin_ap1': ColorSpace('ACES', 'ACEScg'),
-            'lin_srgb': ColorSpace('Utility', 'Linear Rec.709 (sRGB)'),
-        }
-
-        # Unsupported names
-        # g22_ap1
-        # g18_ap1
-        # adobergb
-        # lin_adobergb
-        # srgb_displayp3
-        # lin_displayp3
-
-        color_space = color_spaces.get(name, ColorSpace('Utility', 'Raw'))
-        return color_space
-
-
 def create_image(
     parent: hou.VopNode,
     name: str | None = None,
@@ -195,19 +149,17 @@ def create_image(
 ) -> hou.VopNode:
     """Create and return an image node."""
 
-    if color_space is None:
-        color_space = ColorSpace('Utility', 'Raw')
-
     filename = filename.replace('\\', '/')
     node = create_node('arnold::image', parent, hou.VopNode, name)
-    node.setParms(
-        {
-            'filename': filename,
-            'color_family': color_space.color_family,
-            'color_space': color_space.color_space,
-            'ignore_missing_textures': ignore_missing_textures,
-        }
-    )
+    parms: dict[str, str | bool] = {
+        'filename': filename,
+        'ignore_missing_textures': ignore_missing_textures,
+    }
+    if color_space is not None:
+        parms['color_family'] = color_space.color_family
+        parms['color_space'] = color_space.color_space
+
+    node.setParms(parms)
 
     return node
 
